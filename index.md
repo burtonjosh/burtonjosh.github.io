@@ -1,4 +1,4 @@
-@def title = "Personal Website"
+@def title = "Joshua Burton"
 @def tags = ["syntax", "code"]
 
 # Setup
