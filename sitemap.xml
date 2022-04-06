@@ -14,31 +14,25 @@
     <priority>0.5</priority>
 </url>
 <url>
-    <loc>https://burtonjosh.github.io/menu2/index.html</loc>
-    <lastmod>2022-04-06</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-</url>
-<url>
-    <loc>https://burtonjosh.github.io/menu1/index.html</loc>
-    <lastmod>2022-04-06</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-</url>
-<url>
     <loc>https://burtonjosh.github.io/blog/first_post/index.html</loc>
     <lastmod>2022-04-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
 </url>
 <url>
-    <loc>https://burtonjosh.github.io/blog/index.html</loc>
+    <loc>https://burtonjosh.github.io/hobbies/index.html</loc>
     <lastmod>2022-04-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
 </url>
 <url>
-    <loc>https://burtonjosh.github.io/menu3/index.html</loc>
+    <loc>https://burtonjosh.github.io/work/index.html</loc>
+    <lastmod>2022-04-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+</url>
+<url>
+    <loc>https://burtonjosh.github.io/blog/index.html</loc>
     <lastmod>2022-04-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
