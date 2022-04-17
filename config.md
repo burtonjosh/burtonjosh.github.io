@@ -13,7 +13,7 @@ Add here global page variables to use throughout your website.
 # RSS (the website_{title, descr, url} must be defined to get RSS)
 @def generate_rss = true
 @def website_title = "Josh Burton"
-@def website_descr = "Personal website using Franklin"
+@def website_descr = "Personal website"
 @def website_url   = "https://burtonjosh.github.io/"
 
 <!--

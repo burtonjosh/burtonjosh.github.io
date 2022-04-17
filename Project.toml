@@ -1,3 +1,8 @@
 [deps]
+ArviZ = "131c737c-5715-5e2e-ad31-c244f01c1dc7"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Franklin = "713c75ef-9fc9-4b05-94a9-213340da978e"
 NodeJS = "2bd173c7-0d6d-553b-b6af-13a54713934c"
+StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
+StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
+Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
