@@ -1,0 +1,516 @@
+<!doctype html> <!-- Minimal Mistakes Jekyll Theme 4.16.4 by Michael Rose Copyright 2013-2019 Michael Rose - mademistakes.com | @mmistakes Free for personal and commercial use under the MIT license https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE --> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/libs/katex/katex.min.css"> <link rel=stylesheet  href="/libs/highlight/github.min.css"> <link rel=stylesheet  href="/css/franklin.css"> <link rel=stylesheet  href="/css/minimal-mistakes.css"> <link rel=stylesheet  href="/css/adjust.css"> <link rel=icon  href="/assets/temp_fav.png"> <!--[if IE ]> <style> /* old IE unsupported flexbox fixes */ .greedy-nav .site-title { padding-right: 3em; } .greedy-nav button { position: absolute; top: 0; right: 0; height: 100%; } </style> <![endif]--> <title>Golf putting</title> <body class=layout--single > <div class=masthead > <div class=masthead__inner-wrap > <div class=masthead__menu > <nav id=site-nav  class=greedy-nav > <a class=site-title  href="/">Explorations in inference</a> <ul class=visible-links > <li class=masthead__menu-item ><a href="/blog/" >Blog</a> <li class=masthead__menu-item ><a href="/work/" >Publications & Awards</a> <li class=masthead__menu-item ><a href="/cv_placeholder.pdf" >CV</a> <li class=masthead__menu-item ><a href="/hobbies/">Other Interests</a> </ul> <button class="greedy-nav__toggle hidden" type=button > <span class=visually-hidden >Toggle menu</span> <div class=navicon ></div> </button> <ul class="hidden-links hidden"></ul> </nav> </div> </div> </div> <div class=initial-content > <div id=main  role=main > <div class="sidebar sticky"> <div itemscope itemtype="https://schema.org/Person"> <div class=author__avatar > <img src="/assets/portrait.jpg" alt=Me  itemprop=image > </div> <div class=author__content > <h3 class=author__name  itemprop=name >Joshua Burton</h3> <p class=author__bio  itemprop=description >PhD student at the University of Manchester, studying parameter inference using time series data in non-linear stochastic models.</p> </div> <div class=author__urls-wrapper > <button class="btn btn--inverse">Follow</button> <ul class="author__urls social-icons"> <li itemprop=homeLocation  itemscope itemtype="https://schema.org/Place"> <i class="fas fa-fw fa-map-marker-alt" aria-hidden=true ></i> <span itemprop=name >Manchester, United Kingdom</span> <li><a href="https://twitter.com/JoshuaBurtonUoM" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-twitter-square" aria-hidden=true ></i> Twitter</a> <li><a href="https://github.com/burtonjosh" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-github" aria-hidden=true ></i> GitHub</a> <li><a href="mailto:joshua.burton@manchester.ac.uk" rel="nofollow noopener noreferrer"><i class="fa fa-envelope" aria-hidden=true ></i> Email</a> </ul> </div> </div> </div> <div class=franklin-content ><h1 id=modelling_golf_putting_data_using_turing_and_arviz ><a href="#modelling_golf_putting_data_using_turing_and_arviz" class=header-anchor >Modelling golf putting data using Turing and ArviZ</a></h1> <p>The <a href="https://mc-stan.org/users/documentation/case-studies/golf.html">golf putting case study</a> in the Stan documentation is a really nice showcase of <em>iterative model building</em> in the context of MCMC. In this post I&#39;m going to demonstrate how the models in the Stan tutorial can be implemented with <a href="turing.ml/stable">Turing</a>, a Julia library for general-purpose probabilistic programming. This has already been done by Joshua Duncan<sup id="fnref:jduncan"><a href="#fndef:jduncan" class=fnref >[1]</a></sup>, so additionally I&#39;ll show how to make use of the <a href="https://julia.arviz.org/stable/">ArviZ.jl</a> package in order to do some posterior predictive analysis, specifically PSIS-LOO cross validation and LOO-PIT predictive checking. These are really powerful tools which can be used to help us evaluate our model fit, but I&#39;ll focus only on the implementation with Turing and ArviZ, so if you want to understand these tools and how to interpret them you can read about PSIS-LOO <a href="https://arxiv.org/pdf/1507.04544.pdf">here</a>, and LOO-PIT in Gelman et al. BDA &#40;2014&#41;, Section 6.3.</p> <p>For full details on each of the models, I suggest reading the case study in the Stan documentation, which is really nicely written and easy to follow.</p> <div class=franklin-toc ><ol><li><a href="#data_visualisation">Data visualisation</a><li><a href="#models">Models</a><ol><li><a href="#logistic_regression">Logistic regression</a><ol><li><a href="#fitting_the_model">Fitting the model</a><li><a href="#visualising_the_fit">Visualising the fit</a><li><a href="#evaluating_the_fit_using_elpd">Evaluating the fit using ELPD</a></ol><li><a href="#modelling_from_first_principles">Modelling from first principles</a><ol><li><a href="#posterior_predictive_checks">Posterior predictive checks</a></ol><li><a href="#an_extended_model_that_accounts_for_how_hard_the_ball_is_hit">An extended model that accounts for how hard the ball is hit</a><ol><li><a href="#a_bad_fit">A bad fit</a><li><a href="#a_good_fit">A good fit</a></ol></ol><li><a href="#model_selection">Model selection</a><li><a href="#conclusion">Conclusion</a><li><a href="#references">References</a></ol></div> <h2 id=data_visualisation ><a href="#data_visualisation" class=header-anchor >Data visualisation</a></h2> <p>The first thing to do is have a look at the data we have and see if we get any inspiration for a model.</p> <pre><code class=language-julia >using Turing, DelimitedFiles, StatsPlots, StatsFuns, ArviZ
+gr&#40;size&#61;&#40;580,300&#41;&#41;
+
+# Turing can have quite verbose output, so I&#39;ll
+# suppress that for readability
+# It&#39;s usually a good idea to not do this,
+# so you are warned of any divergences
+import Logging
+Logging.disable_logging&#40;Logging.Warn&#41;; # or e.g. Logging.Info</code></pre> <pre><code class=language-julia >data &#61; readdlm&#40;&quot;_assets/blog/golf-putting-in-turing/code/golf_data_old.txt&quot;&#41;
+x, n, y &#61; data&#91;:,1&#93;, data&#91;:,2&#93;, data&#91;:,3&#93;;
+yerror &#61; sqrt.&#40;y./n .* &#40;1 .-y./n&#41;./n&#41;
+
+scatter&#40;x,y ./ n, yerror &#61; yerror,
+        ylabel &#61; &quot;Probability of success&quot;,
+        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
+        title &#61; &quot;Data on putts in pro golf&quot;,
+        legend&#61;:false,
+        color&#61;:lightblue,
+        &#41;</code></pre> <img src="/assets/blog/golf-putting-in-turing/code/output/initial_data.svg" alt=""> <p>The error bars associated with each point \(j\) in the plot are given by \(\sqrt{\hat{p}_j(1−\hat{p}_j)/n_j}\), where \(\hat{p}_j=y_j/n_j\) is the success rate for putts taken at distance \(x_j\).</p> <p>We can see a pretty clear trend – the greater the distance from the hole, the lower the probability of the ball going in.</p> <h2 id=models ><a href="#models" class=header-anchor >Models</a></h2> <p>It&#39;s typically a good idea to start with a very simple model, and then slowly add in more features to improve the fit of our models. This is exactly what is done in the Stan documentation. One of the simplest models we can use in this instance is a logistic regression.</p> <blockquote> <p>📝 I&#39;ll go through all of the details for defining the model, fitting it, and doing posterior checks in this first example, but in the later ones I&#39;ll just show the code and end result.</p> </blockquote> <h3 id=logistic_regression ><a href="#logistic_regression" class=header-anchor >Logistic regression</a></h3> <p>The first model considers the probability of success &#40;i.e. getting the ball in the hole&#41; as a function of distance from the hole, using a logistic regression:</p> \[ y_j \sim \text{Binomial}(n_j, \text{logit}^{-1}(a + bx_j)), \hspace{1em}\text{for j = 1,\dots, J.} \] <p>In Turing, this looks like</p> <pre><code class=language-julia >@model function golf_logistic&#40;x, y, n&#41;
+    a ~ Normal&#40;0,1&#41;
+    b ~ Normal&#40;0,1&#41;
+
+    p &#61; logistic.&#40;a .&#43; b .* x&#41;
+    for i in 1:length&#40;n&#41;
+        y&#91;i&#93; ~ Binomial&#40;n&#91;i&#93;,p&#91;i&#93;&#41;
+    end
+end</code></pre> <pre><code class="plaintext code-output">golf_logistic (generic function with 2 methods)</code></pre>
+<h4 id=fitting_the_model ><a href="#fitting_the_model" class=header-anchor >Fitting the model</a></h4>
+<p>We can fit this model with the No-U-Turn sampler &#40;NUTS&#41; using Turing&#39;s <code>sample</code> function.</p>
+<pre><code class=language-julia >logistic_model &#61; golf_logistic&#40;x,y,n&#41;
+fit_logistic &#61; sample&#40;logistic_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
+<pre><code class="plaintext code-output">Chains MCMC chain (2000×14×4 Array{Float64, 3}):
+
+Iterations        = 1001:1:3000
+Number of chains  = 4
+Samples per chain = 2000
+Wall duration     = 1.05 seconds
+Compute duration  = 1.01 seconds
+parameters        = a, b
+internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
+
+Summary Statistics
+  parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
+      Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
+
+           a    2.2240    0.0580     0.0006    0.0014   1884.0858    1.0019     1870.9888
+           b   -0.2550    0.0067     0.0001    0.0002   2003.0089    1.0016     1989.0854
+
+Quantiles
+  parameters      2.5%     25.0%     50.0%     75.0%     97.5%
+      Symbol   Float64   Float64   Float64   Float64   Float64
+
+           a    2.1104    2.1836    2.2234    2.2639    2.3381
+           b   -0.2681   -0.2595   -0.2550   -0.2505   -0.2421
+</code></pre>
+<p>We can see that it took around half a second to compute 8000 posterior samples across 4 chains. The MCSE mean is 0 to two decimal places for both parameters, and both \(\hat{R}\) values are close to 1, indicating convergence and good mixing between chains. So let&#39;s have a look at the fit.</p>
+<h4 id=visualising_the_fit ><a href="#visualising_the_fit" class=header-anchor >Visualising the fit</a></h4>
+<p>The following plot shows the model fit. The black line corresponds to the posterior median, and the grey lines show 500 draws from the posterior distribution.</p>
+<pre><code class=language-julia ># get posterior median
+meda, medb &#61; &#91;quantile&#40;Array&#40;fit_logistic&#41;&#91;:,i&#93;,0.5&#41; for i in 1:2&#93;
+
+# select some posterior samples at random
+n_samples &#61; 500
+fit_samples &#61; Array&#40;fit_logistic&#41;
+idxs &#61; sample&#40;axes&#40;fit_samples,1&#41;,n_samples&#41;
+posterior_draws &#61; fit_samples&#91;idxs,:&#93;
+
+posterior_data &#61; &#91;logistic.&#40;posterior_draws&#91;i,1&#93; .&#43; posterior_draws&#91;i,2&#93;.*x&#41; for i in 1:n_samples&#93;
+plot&#40;x,posterior_data,color&#61;:grey,alpha&#61;0.08,legend&#61;:false&#41;
+
+plot&#33;&#40;x,logistic.&#40;meda .&#43; medb.*x&#41;,color&#61;:black,linewidth&#61;2&#41;
+scatter&#33;&#40;x,y ./ n, yerror &#61; yerror,
+        ylabel &#61; &quot;Probability of success&quot;,
+        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
+        title &#61; &quot;Fitted logistic regression&quot;,
+        legend&#61;:false,
+        color&#61;:lightblue&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/output/logistic_plot.svg" alt="">
+<p>A <em>by-eye</em> evaluation leads us to conclude this isn&#39;t a very good fit. Can we formalise this conclusion with some more rigorous tools?</p>
+<h4 id=evaluating_the_fit_using_elpd ><a href="#evaluating_the_fit_using_elpd" class=header-anchor >Evaluating the fit using ELPD</a></h4>
+<p>The expected log pointwise predictive density &#40;ELPD&#41; is a measure of predictive accuracy for each of the \(J\) data points taken one at a time<sup id="fnref:elpd"><a href="#fndef:elpd" class=fnref >[2]</a></sup>. It can&#39;t be computed directly, but we can estimate it with leave-one-out &#40;LOO&#41; cross-validation. The LOO estimate of the ELPD can be noisy under certain conditions, but can be improved with Pareto smoothed importance sampling. This is the estimate implemented in ArviZ. In order to use the tools in ArviZ we first have to compute the posterior predictive distribution, save the pointwise log likelihoods from our model fit, and convert our Turing chains into an ArviZ <code>InferenceData</code> object.</p>
+<blockquote>
+<p>📝 For our predictive posterior we replace the data <code>y</code> with a vector of <code>missing</code> values, <code>similar&#40;y, Missing&#41;</code>.</p>
+</blockquote>
+<pre><code class=language-julia ># Instantiate the predictive model
+logistic_predict &#61; golf_logistic&#40;x,similar&#40;y, Missing&#41;,n&#41;
+posterior_predictive &#61; predict&#40;logistic_predict, fit_logistic&#41;
+
+
+# Ensure the ordering of the loglikelihoods matches the ordering of &#96;posterior_predictive&#96;
+loglikelihoods &#61; pointwise_loglikelihoods&#40;logistic_model, fit_logistic&#41;
+names &#61; string.&#40;keys&#40;posterior_predictive&#41;&#41;
+loglikelihoods_vals &#61; getindex.&#40;Ref&#40;loglikelihoods&#41;, names&#41;
+
+# Reshape into &#96;&#40;nchains, nsamples, size&#40;y&#41;...&#41;&#96;
+loglikelihoods_arr &#61; permutedims&#40;cat&#40;loglikelihoods_vals...; dims&#61;3&#41;, &#40;2, 1, 3&#41;&#41;;
+
+# construct idata object
+idata_logistic &#61; from_mcmcchains&#40;fit_logistic;
+                        posterior_predictive&#61;posterior_predictive,
+                        log_likelihood&#61;Dict&#40;&quot;ll&quot; &#61;&gt; loglikelihoods_arr&#41;,
+                        library&#61;&quot;Turing&quot;,
+                        observed_data&#61;Dict&#40;&quot;x&quot; &#61;&gt; x,
+                                           &quot;n&quot; &#61;&gt; n,
+                                           &quot;y&quot; &#61;&gt; y&#41;&#41;;</code></pre>
+<p>With this <code>InferenceData</code> object we can utilise some powerful analysis and visualisation tools in ArviZ.</p>
+<p>For example, we can now easily estimate the ELPD with PSIS-LOO.</p>
+<pre><code class=language-julia >logistic_loo &#61; loo&#40;idata_logistic,pointwise&#61;true&#41;;
+println&#40;&quot;LOO estimate is &quot;,round&#40;logistic_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;logistic_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
+        &quot; and an estimated number of parameters of &quot;,round&#40;logistic_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
+<pre><code class="plaintext code-output">UndefVarError: loo not defined
+</code></pre>
+<p>The estimate itself is relative so isn&#39;t exactly useful by itself, but we can see that the standard error is high, and the estimated number of parameters in the model is ~40, much larger than the true value of 1.</p>
+<p>Another tool at our disposal is the PSIS-LOO probability integral transform. Oriol Abril has written a nice blog post on how to interpret the following plots<sup id="fnref:loopit"><a href="#fndef:loopit" class=fnref >[3]</a></sup>, and I&#39;ll quote directly from the post to give some intuition about this:</p>
+<blockquote>
+<p>Probability Integral Transform stands for the fact that given a random variable \(X\), <strong>the random variable \(Y = F_X(X) = P(x\leq X)\) is a uniform random variable if the transformation \(F_X\) is the Cumulative Density Function</strong> &#40;CDF&#41; of the original random variable \(X\). If instead of \(F_X\) we have \(n\) samples from \(X\), \(\{x_1,\dots, x_n\}\), we can use them to estimate \(\hat{F}_X\) and apply it to future \(X\) samples \(x^*\). In this case, \(\hat{F}_X(x^∗)\) will be approximately a uniform random variable, converging to an exact uniform variable as \(n\) tends to infinity.</p>
+</blockquote>
+<p>So we&#39;re looking for our computed \(\hat{F}_X\) to be, more or less, a uniform random variable. Anything other than this suggests that the model is a poor fit.</p>
+<blockquote>
+<p>📝 This is not to say that if \(\hat{F}_X\) is uniform then our model is good. Doing a large number of varied diagnostic checks, e.g \(\hat{R}\), ESS &#40;bulk and tail&#41;, MCSE, and posterior predictive checks like PSIS-LOO, simply gives us more opportunity to identify any issues with our model.</p>
+</blockquote>
+<p>The LOO-PIT for our simple logistic regression model is clearly not uniform which suggests to us, as expected, the model is a poor choice.</p>
+<pre><code class=language-julia >plot_loo_pit&#40;idata_logistic; y&#61;&quot;y&quot;&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/logistic_loo_pit.png" alt="">
+<p>Sometimes it&#39;s not very clear if the estimate is non-uniform, so we can plot the difference between the LOO-PIT Empirical Cumulative Distribution Function &#40;ECDF&#41; and the uniform CDF instead of LOO-PIT kde for a more &#39;zoomed in&#39; look.</p>
+<pre><code class=language-julia >plot_loo_pit&#40;idata_logistic; y&#61;&quot;y&quot;,ecdf&#61;true&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/logistic_loo_pit_ecdf.png" alt="">
+<p>Lastly, it&#39;s a good idea to plot our Pareto \(k\) diagnostic, to assess the reliability of the above estimates<sup id="fnref:psisdiag"><a href="#fndef:psisdiag" class=fnref >[4]</a></sup>. In short, we&#39;re looking for values of \(k < 0.7\). Any \(k\) values greater than 1 and we can&#39;t compute an estimate for the Monte Carlo standard error &#40;SE&#41; of the ELPD. In this case the ELPD estimate is not reliable. These high \(k\) values also explain the large estimate for the effective number of parameters.</p>
+<pre><code class=language-julia >plot_khat&#40;logistic_loo&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/logistic_khat.png" alt="">
+<h3 id=modelling_from_first_principles ><a href="#modelling_from_first_principles" class=header-anchor >Modelling from first principles</a></h3>
+<p>So hopefully we&#39;re pretty convinced by now that this isn&#39;t a good model. An alternative approach is to consider the angle of the shot, where 0 corresponds to the centre of the hole. We assume that the golfers attempt to hit the ball directly at the hole &#40;i.e. an angle of 0&#41;, but are not always perfect due to a number of &#40;known or unknown&#41; factors, so that the angle is Normally distributed about 0 with some standard deviation \(\sigma\). The model is derived in detail in the Stan documentation, so I will just show the Turing implementation.</p>
+<pre><code class=language-julia >Phi&#40;x&#41; &#61; cdf&#40;Normal&#40;&#41;,x&#41;
+
+@model function golf_angle&#40;x,y,n,r,R&#41;
+    threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
+    sigma ~ truncated&#40;Normal&#40;0,1&#41;,0,Inf&#41;
+    p &#61; 2 .* Phi.&#40;threshold_angle ./ sigma&#41; .- 1
+    for i in 1:length&#40;n&#41;
+        y&#91;i&#93; ~ Binomial&#40;n&#91;i&#93;,p&#91;i&#93;&#41;
+    end
+    return sigma*180/π # generated quantities
+end
+
+r &#61; &#40;1.68 / 2&#41; / 12;
+R &#61; &#40;4.25 / 2&#41; / 12;
+
+angle_model &#61; golf_angle&#40;x,y,n,r,R&#41;
+fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
+<pre><code class="plaintext code-output">Chains MCMC chain (2000×13×4 Array{Float64, 3}):
+
+Iterations        = 1001:1:3000
+Number of chains  = 4
+Samples per chain = 2000
+Wall duration     = 4.15 seconds
+Compute duration  = 3.86 seconds
+parameters        = sigma
+internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
+
+Summary Statistics
+  parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
+      Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
+
+       sigma    0.0266    0.0004     0.0000    0.0000   3887.1380    1.0001     1006.2485
+
+Quantiles
+  parameters      2.5%     25.0%     50.0%     75.0%     97.5%
+      Symbol   Float64   Float64   Float64   Float64   Float64
+
+       sigma    0.0259    0.0264    0.0266    0.0269    0.0274
+</code></pre>
+<p>The model is fit just as before, and if we visualise the fit against the posterior median of the previous model it seems to be a lot better.</p>
+<pre><code class=language-julia ># get posterior median
+med_sigma &#61; quantile&#40;Array&#40;fit_angle&#41;,0.5&#41;
+
+# select posterior samples at random
+n_samples &#61; 500
+fit_samples &#61; Array&#40;fit_angle&#41;
+idxs &#61; sample&#40;1:length&#40;fit_angle&#41;,n_samples&#41;
+posterior_draws &#61; fit_samples&#91;idxs&#93;
+
+threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
+
+post_lines &#61; &#91;2 .* Phi.&#40;threshold_angle ./ posterior_draws&#91;i&#93;&#41; .- 1 for i in 1:n_samples&#93;
+plot&#40;x,post_lines,color&#61;:grey,alpha&#61;0.08,legend&#61;:false&#41;
+plot&#33;&#40;x,2 .* cdf.&#40;Normal&#40;&#41;,threshold_angle ./ med_sigma&#41; .- 1,color&#61;:blue,linewidth&#61;1.5&#41;
+
+plot&#33;&#40;x,logistic.&#40;meda .&#43; medb.*x&#41;,color&#61;:black,linewidth&#61;2&#41;
+annotate&#33;&#40;12,0.5,&quot;Logistic regression model&quot;,8&#41;
+annotate&#33;&#40;5,0.35,text&#40;&quot;Geometry based model&quot;,color&#61;:blue,8&#41;&#41;
+scatter&#33;&#40;x,y ./ n, yerror &#61; yerror,
+        ylabel &#61; &quot;Probability of success&quot;,
+        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
+        title &#61; &quot;Comparison of both models&quot;,
+        legend&#61;:false,
+        color&#61;:lightblue&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/output/comparison_plot.svg" alt="">
+<h4 id=posterior_predictive_checks ><a href="#posterior_predictive_checks" class=header-anchor >Posterior predictive checks</a></h4>
+<p>Let&#39;s have a look at the same posterior predictive checks that we did for the previous model.</p>
+<pre><code class=language-julia ># Instantiate the predictive model
+angle_predict &#61; golf_angle&#40;x,similar&#40;y, Missing&#41;,n,r,R&#41;
+posterior_predictive &#61; predict&#40;angle_predict, fit_angle&#41;
+
+# Ensure the ordering of the loglikelihoods matches the ordering of &#96;posterior_predictive&#96;
+loglikelihoods &#61; pointwise_loglikelihoods&#40;angle_model, fit_angle&#41;
+names &#61; string.&#40;keys&#40;posterior_predictive&#41;&#41;
+loglikelihoods_vals &#61; getindex.&#40;Ref&#40;loglikelihoods&#41;, names&#41;
+# Reshape into &#96;&#40;nchains, nsamples, size&#40;y&#41;...&#41;&#96;
+loglikelihoods_arr &#61; permutedims&#40;cat&#40;loglikelihoods_vals...; dims&#61;3&#41;, &#40;2, 1, 3&#41;&#41;;
+
+idata_angle &#61; from_mcmcchains&#40;fit_angle;
+                              posterior_predictive&#61;posterior_predictive,
+                              log_likelihood&#61;Dict&#40;&quot;ll&quot; &#61;&gt; loglikelihoods_arr&#41;,
+                              library&#61;&quot;Turing&quot;,
+                              observed_data&#61;Dict&#40;&quot;x&quot; &#61;&gt; x,
+                                                 &quot;n&quot; &#61;&gt; n,
+                                                 &quot;y&quot; &#61;&gt; y&#41;&#41;;
+
+angle_loo &#61; loo&#40;idata_angle,pointwise&#61;true&#41;;
+println&#40;&quot;LOO is &quot;,round&#40;angle_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;angle_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
+        &quot; and an estimated number of parameters of &quot;,round&#40;angle_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
+<pre><code class="plaintext code-output">UndefVarError: from_mcmcchains not defined
+</code></pre>
+<pre><code class=language-julia >plot_loo_pit&#40;idata_angle; y&#61;&quot;y&quot;&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit.png" alt="">
+<p>This looks pretty promising. Our LOO-PIT seems to be uniform. However, when we look at the ECDF plot we can see there&#39;s some difference between our estimate and the uniform CDF.</p>
+<pre><code class=language-julia >plot_loo_pit&#40;idata_angle; y&#61;&quot;y&quot;,ecdf&#61;true&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit_ecdf.png" alt="">
+<p>We also have one problematic Pareto \(k\) value, rendering our estimate unreliable anyhow.</p>
+<pre><code class=language-julia >plot_khat&#40;logistic_loo&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/angle_khat.png" alt="">
+<p>If this wasn&#39;t enough to convince you that the model isn&#39;t great, there is actually a lot more golf data available to us. Here I&#39;ll do something slightly different to the Stan documentation, and fit our model directly to this new data, to see how it performs.</p>
+<pre><code class=language-julia >data_new &#61; readdlm&#40;&quot;_assets/blog/golf-putting-in-turing/code/golf_data_new.txt&quot;&#41;
+x_new, n_new, y_new &#61; data_new&#91;:,1&#93;, data_new&#91;:,2&#93;, data_new&#91;:,3&#93;;
+yerror_new &#61; sqrt.&#40;y_new./n_new .* &#40;1 .-y_new./n_new&#41;./n_new&#41;;
+
+angle_model &#61; golf_angle&#40;x_new,y_new,n_new,r,R&#41;
+fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
+<pre><code class="plaintext code-output">Chains MCMC chain (2000×13×4 Array{Float64, 3}):
+
+Iterations        = 1001:1:3000
+Number of chains  = 4
+Samples per chain = 2000
+Wall duration     = 1.42 seconds
+Compute duration  = 1.39 seconds
+parameters        = sigma
+internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
+
+Summary Statistics
+  parameters      mean       std   naive_se      mcse        ess      rhat   ess_per_sec
+      Symbol   Float64   Float64    Float64   Float64    Float64   Float64       Float64
+
+       sigma    0.0473    0.0000     0.0000    0.0000   801.3589    1.0007      576.5172
+
+Quantiles
+  parameters      2.5%     25.0%     50.0%     75.0%     97.5%
+      Symbol   Float64   Float64   Float64   Float64   Float64
+
+       sigma    0.0473    0.0473    0.0473    0.0473    0.0473
+</code></pre>
+<pre><code class=language-julia ># get posterior median
+med_sigma &#61; quantile&#40;Array&#40;fit_angle&#41;,0.5&#41;
+
+threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x_new&#41;
+plot&#40;x_new,2 .* cdf.&#40;Normal&#40;&#41;,threshold_angle ./ med_sigma&#41; .- 1,color&#61;:blue,linewidth&#61;1.5&#41;
+scatter&#33;&#40;x_new,y_new ./ n_new, yerror &#61; yerror_new,
+        ylabel &#61; &quot;Probability of success&quot;,
+        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
+        title &#61; &quot;New data, old model&quot;,
+        legend&#61;:false,
+        color&#61;:lightblue&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/output/new_data.svg" alt="">
+<p>And this really sends our posterior checks wild:</p>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit_new.png" alt="">
+<img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit_ecdf_new.png" alt="">
+<img src="/assets/blog/golf-putting-in-turing/code/../images/angle_khat_new.png" alt="">
+<p>Something is definitely not right here, and it&#39;s clear that this data can&#39;t be explained only by angular precision. Indeed, in golf you can&#39;t just hit the ball in the right direction – you also have to hit it with the right amount of power<sup id="fnref:wiigolf"><a href="#fndef:wiigolf" class=fnref >[5]</a></sup>.</p>
+<blockquote>
+<p>📝 The intuition for this next step in extending the model is much clearer if we plot the new data on top of the fit to the old data, as is done in the Stan documentation. I think this helps to illustrate that although posterior predictive checking can be very powerful, it shouldn&#39;t be the only thing you rely on.</p>
+</blockquote>
+<h3 id=an_extended_model_that_accounts_for_how_hard_the_ball_is_hit ><a href="#an_extended_model_that_accounts_for_how_hard_the_ball_is_hit" class=header-anchor >An extended model that accounts for how hard the ball is hit</a></h3>
+<p>So we have an extra parameter now, <code>sigma_distance</code>, and additionally we make the assumption that the golfer aims to hit the ball 1 foot past the hole, with a distance tolerance of 3 feet &#40;seriously if you&#39;re lost, read the Stan docs&#41;.</p>
+<pre><code class=language-julia >@model function golf_angle_distance_2&#40;x,y,n,r,R,overshot,distance_tolerance&#41;
+    sigma_angle ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
+    sigma_distance ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
+
+    threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
+
+    p_angle &#61; 2 .* Phi.&#40;threshold_angle ./ sigma_angle&#41; .- 1
+    p_distance &#61; Phi.&#40;&#40;distance_tolerance - overshot&#41; ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41; -
+        Phi.&#40;-overshot ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41;
+    p &#61; p_angle .* p_distance
+
+    for i in 1:length&#40;n&#41;
+        y&#91;i&#93; ~ Binomial&#40;n&#91;i&#93;,p&#91;i&#93;&#41;
+    end
+    return sigma_angle*180/π
+end
+
+overshot &#61; 1
+distance_tolerance &#61; 3
+
+angle_distance_2_model &#61; golf_angle_distance_2&#40;x_new, y_new, n_new, r, R, overshot, distance_tolerance&#41;
+fit_angle_distance_2 &#61; sample&#40;angle_distance_2_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
+<pre><code class="plaintext code-output">Chains MCMC chain (2000×14×4 Array{Float64, 3}):
+
+Iterations        = 1001:1:3000
+Number of chains  = 4
+Samples per chain = 2000
+Wall duration     = 5.73 seconds
+Compute duration  = 5.69 seconds
+parameters        = sigma_angle, sigma_distance
+internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
+
+Summary Statistics
+      parameters      mean       std   naive_se      mcse       ess      rhat   ess_per_sec
+          Symbol   Float64   Float64    Float64   Float64   Float64   Float64       Float64
+
+     sigma_angle    0.0206    0.0090     0.0001    0.0009   16.1169    8.4368        2.8315
+  sigma_distance    0.1170    0.0214     0.0002    0.0023   16.6212    3.8383        2.9201
+
+Quantiles
+      parameters      2.5%     25.0%     50.0%     75.0%     97.5%
+          Symbol   Float64   Float64   Float64   Float64   Float64
+
+     sigma_angle    0.0132    0.0133    0.0134    0.0280    0.0362
+  sigma_distance    0.0942    0.0942    0.1363    0.1373    0.1382
+</code></pre>
+<h4 id=a_bad_fit ><a href="#a_bad_fit" class=header-anchor >A bad fit</a></h4>
+<p>Now before we go jumping into our posterior predictive checks to try and confirm that our idea was as brilliant as we thought it was, let&#39;s take a quick look at the diagnostics provided by Turing. The ESS is very low &#40;~16&#41; and the \(\hat{R}\) values for both parameters are very large, indicated poor mixing. We can plot the chains to see if we can see anything obvious.</p>
+<pre><code class=language-julia >plot&#40;fit_angle_distance_2&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/output/chain_plot.svg" alt="">
+<p>The chains are definitely not mixing, and it looks like they are getting stuck in some really tight local minima. The issue is with the Binomial error model, it tries too hard to fit the first few points &#40;due to the \(n_j\) being large&#41; and this causes the rest of the fit to be off.</p>
+<blockquote>
+<p>📝 Again, this illustrates that we don&#39;t always need posterior predictive checks to tell us if something is wrong. In fact, if the problem is obvious, as is the case here, we don&#39;t really need to go through all the effort of setting up the checks.</p>
+</blockquote>
+<h4 id=a_good_fit ><a href="#a_good_fit" class=header-anchor >A good fit</a></h4>
+<p>The solution given is to approximate the Binomial data distribution with a Normal and then add independent variance. This forces &#40;helps?&#41; the model to not fit <em>so</em> well to certain data points to the detriment of others, improving the <em>overall</em> fit.</p>
+<pre><code class=language-julia >@model function golf_angle_distance_3&#40;x,raw,n,r,R,overshot,distance_tolerance&#41;
+    sigma_angle ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
+    sigma_distance ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;    
+    sigma_y ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
+
+    threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
+    p_angle &#61; 2 .* Phi.&#40;threshold_angle ./ sigma_angle&#41; .- 1
+    p_distance &#61; Phi.&#40;&#40;distance_tolerance - overshot&#41; ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41; -
+        Phi.&#40;-overshot ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41;
+    p &#61; p_angle .* p_distance
+
+    for i in 1:length&#40;n&#41;
+        raw&#91;i&#93; ~ Normal&#40;p&#91;i&#93;, sqrt&#40;p&#91;i&#93; * &#40;1 - p&#91;i&#93;&#41; / n&#91;i&#93; &#43; sigma_y^2&#41;&#41;;
+    end
+    return sigma_angle*180/π
+end
+
+angle_distance_3_model &#61; golf_angle_distance_3&#40;x_new,y_new./n_new,n_new,r,R,overshot,distance_tolerance&#41;
+fit_angle_distance_3 &#61; sample&#40;angle_distance_3_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
+<pre><code class="plaintext code-output">Chains MCMC chain (2000×15×4 Array{Float64, 3}):
+
+Iterations        = 1001:1:3000
+Number of chains  = 4
+Samples per chain = 2000
+Wall duration     = 2.7 seconds
+Compute duration  = 2.65 seconds
+parameters        = sigma_angle, sigma_distance, sigma_y
+internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
+
+Summary Statistics
+      parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
+          Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
+
+     sigma_angle    0.0178    0.0001     0.0000    0.0000   3384.4583    0.9996     1278.6015
+  sigma_distance    0.0800    0.0013     0.0000    0.0000   3457.5784    0.9997     1306.2253
+         sigma_y    0.0031    0.0006     0.0000    0.0000   3620.7383    1.0013     1367.8649
+
+Quantiles
+      parameters      2.5%     25.0%     50.0%     75.0%     97.5%
+          Symbol   Float64   Float64   Float64   Float64   Float64
+
+     sigma_angle    0.0176    0.0177    0.0178    0.0179    0.0180
+  sigma_distance    0.0775    0.0792    0.0800    0.0809    0.0825
+         sigma_y    0.0021    0.0026    0.0030    0.0034    0.0044
+</code></pre>
+<pre><code class=language-julia ># get posterior median
+med_sigma_angle, med_sigma_distance, _ &#61; &#91;quantile&#40;Array&#40;fit_angle_distance_3&#41;&#91;:,i&#93;,0.5&#41; for i in 1:3&#93;
+
+threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x_new&#41;
+
+p_angle &#61; 2 .* Phi.&#40;threshold_angle ./ med_sigma_angle&#41; .- 1
+p_distance &#61; Phi.&#40;&#40;distance_tolerance - overshot&#41; ./ &#40;&#40;x_new .&#43; overshot&#41; .* med_sigma_distance&#41;&#41; -
+    Phi.&#40;-overshot ./ &#40;&#40;x_new .&#43; overshot&#41; .* med_sigma_distance&#41;&#41;
+post_line &#61; p_angle .* p_distance
+
+plot&#40;x_new,post_line,color&#61;:blue,legend&#61;:false&#41;
+
+scatter&#33;&#40;x_new,y_new ./ n_new, yerror &#61; yerror_new,
+        ylabel &#61; &quot;Probability of success&quot;,
+        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
+        title &#61; &quot;Angle and distance model &#40;good fit&#41;&quot;,
+        legend&#61;:false,
+        color&#61;:blue&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/output/good_fit.svg" alt="">
+<p>So far so good. The moment of truth:</p>
+<pre><code class=language-julia ># Instantiate the predictive model
+angle_distance_3_predict &#61; golf_angle_distance_3&#40;x_new,similar&#40;y_new./n_new, Missing&#41;,n_new,r,R,overshot,distance_tolerance&#41;
+posterior_predictive &#61; predict&#40;angle_distance_3_predict, fit_angle_distance_3&#41;
+
+# Ensure the ordering of the loglikelihoods matches the ordering of &#96;posterior_predictive&#96;
+loglikelihoods &#61; pointwise_loglikelihoods&#40;angle_distance_3_model, fit_angle_distance_3&#41;
+names &#61; string.&#40;keys&#40;posterior_predictive&#41;&#41;
+loglikelihoods_vals &#61; getindex.&#40;Ref&#40;loglikelihoods&#41;, names&#41;
+# Reshape into &#96;&#40;nchains, nsamples, size&#40;y&#41;...&#41;&#96;
+loglikelihoods_arr &#61; permutedims&#40;cat&#40;loglikelihoods_vals...; dims&#61;3&#41;, &#40;2, 1, 3&#41;&#41;;
+
+idata_distance &#61; from_mcmcchains&#40;fit_angle_distance_3;
+                                 posterior_predictive&#61;posterior_predictive,
+                                 log_likelihood&#61;Dict&#40;&quot;ll&quot; &#61;&gt; loglikelihoods_arr&#41;,
+                                 library&#61;&quot;Turing&quot;,
+                                 observed_data&#61;Dict&#40;&quot;x&quot; &#61;&gt; x_new,
+                                                    &quot;n&quot; &#61;&gt; n_new,
+                                                    &quot;raw&quot; &#61;&gt; y_new./n_new&#41;&#41;;
+distance_loo &#61; loo&#40;idata_distance,pointwise&#61;true&#41;;
+println&#40;&quot;LOO is &quot;,round&#40;distance_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;distance_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
+        &quot; and an estimated number of parameters of &quot;,round&#40;distance_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
+<pre><code class="plaintext code-output">UndefVarError: from_mcmcchains not defined
+</code></pre>
+<pre><code class=language-julia >plot_loo_pit&#40;idata_distance; y&#61;&quot;raw&quot;&#41;
+plot_loo_pit&#40;idata_distance; y&#61;&quot;raw&quot;,ecdf&#61;true&#41;
+plot_khat&#40;logistic_loo&#41;</code></pre>
+<img src="/assets/blog/golf-putting-in-turing/code/../images/distance_loo_pit_new.png" alt="">
+<img src="/assets/blog/golf-putting-in-turing/code/../images/distance_loo_pit_ecdf_new.png" alt="">
+<img src="/assets/blog/golf-putting-in-turing/code/../images/distance_khat_new.png" alt="">
+<h2 id=model_selection ><a href="#model_selection" class=header-anchor >Model selection</a></h2>
+<p>One final thing we can do, although it&#39;s more or less redundant in this example, is to compare our models based on PSIS-LOO. In order to do this we can use the <code>compare</code> function. It takes a <code>Dict</code> of <code>InferenceData</code> objects as input, and returns a <code>DataFrame</code> ordered from best to worst model.</p>
+<blockquote>
+<p>📝 Some of our models were fit to different datasets – to do model comparison that actually makes sense, the different models have to be fit to the same data. I won&#39;t show the code for this but the models have been re-fit to the new data.</p>
+</blockquote>
+
+<pre><code class=language-julia >comparison_dict &#61; Dict&#40;&quot;logistic&quot; &#61;&gt; idata_logistic,
+                       &quot;angle&quot; &#61;&gt; idata_angle,
+                       &quot;angle_distance_3&quot; &#61;&gt; idata_distance&#41;
+compare&#40;comparison_dict&#41;</code></pre>
+<pre><code class="plaintext code-output">UndefVarError: idata_logistic not defined
+</code></pre>
+<h2 id=conclusion ><a href="#conclusion" class=header-anchor >Conclusion</a></h2>
+<p>If you&#39;ve been wanting to do posterior predictive checks with your models in Turing and didn&#39;t know where to start, hopefully you&#39;ve learnt something from this post and will be able to integrate these tools into your workflow.</p>
+<p>Cheers to all the hard work of the Turing and ArviZ developers, as well as everyone I&#39;ve referenced here.</p>
+<h2 id=references ><a href="#references" class=header-anchor >References</a></h2>
+<p><table class=fndef  id="fndef:jduncan">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:jduncan">[1]</a>
+        <td class=fndef-content ><a href="https://jduncstats.com/posts/2019-11-02-golf-turing/">https://jduncstats.com/posts/2019-11-02-golf-turing/</a>
+    
+</table>
+<table class=fndef  id="fndef:elpd">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:elpd">[2]</a>
+        <td class=fndef-content >Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC. <a href="https://arxiv.org/abs/1507.04544v5">https://arxiv.org/abs/1507.04544v5</a>
+    
+</table>
+ <table class=fndef  id="fndef:loopit">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:loopit">[3]</a>
+        <td class=fndef-content ><a href="https://oriolabrilpla.cat/python/arviz/pymc3/2019/07/31/loo-pit-tutorial.html">https://oriolabrilpla.cat/python/arviz/pymc3/2019/07/31/loo-pit-tutorial.html</a>
+    
+</table>
+ <table class=fndef  id="fndef:psisdiag">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:psisdiag">[4]</a>
+        <td class=fndef-content >Using the loo package &#40;PSIS diagnostic plots&#41;. <a href="https://mc-stan.org/loo/articles/loo2-example.html">https://mc-stan.org/loo/articles/loo2-example.html</a>
+    
+</table>
+ <table class=fndef  id="fndef:wiigolf">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:wiigolf">[5]</a>
+        <td class=fndef-content >Anyone who&#39;s played Wii Sports Resort golf knows this <a href="https://www.youtube.com/shorts/gaIIr_mPnj0">all too well</a>.
+    
+</table>
+</p>
+<!-- <div class=page-foot >
+    <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> {{ fill author }}. {{isnotpage /tag/*}}Last modified: {{ fill fd_mtime }}.{{end}}
+    Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+</div> -->
+</div>
+
+      </div> 
+    </div>   
+
+    <div class=page__footer >
+      <footer>
+        
+        
+        <div class=page__footer-follow >
+          <ul class=social-icons >
+            <li><strong>Follow:</strong>
+            <li><a href="https://twitter.com/JoshuaBurtonUoM" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-twitter-square" aria-hidden=true ></i> Twitter</a>
+            <li><a href="https://github.com/burtonjosh" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-github" aria-hidden=true ></i> GitHub</a>
+          </ul>
+        </div>
+        <div class=page__footer-copyright >&copy; Joshua Burton. Powered by <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a>,  <a href="https://mademistakes.com/work/minimal-mistakes-jekyll-theme/" rel=nofollow >Minimal Mistakes</a>
+          and the <a href="https://julialang.org">Julia programming language</a>.</div>
+      </footer>
+    </div>
+
+    <script src="/libs/minimal-mistakes/main.min.js"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.8.2/js/all.js" integrity="sha384-DJ25uNYET2XCl5ZF++U8eNxPWqcKohUUBUpKGlNLMchM7q4Wjg2CUpjHLaL8yYPH" crossorigin=anonymous ></script>
+
+    
+        <script src="/libs/katex/katex.min.js"></script>
+<script src="/libs/katex/auto-render.min.js"></script>
+<script>renderMathInElement(document.body)</script>
+
+    
+    
+        <script src="/libs/highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();hljs.configure({tabReplace: '    '});</script>

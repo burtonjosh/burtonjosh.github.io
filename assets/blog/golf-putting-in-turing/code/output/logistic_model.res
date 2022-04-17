@@ -1,0 +1,1 @@
+golf_logistic (generic function with 2 methods)
