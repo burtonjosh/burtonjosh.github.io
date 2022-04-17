@@ -34,8 +34,8 @@ fit_logistic &#61; sample&#40;logistic_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 1.05 seconds
-Compute duration  = 1.01 seconds
+Wall duration     = 1.46 seconds
+Compute duration  = 1.41 seconds
 parameters        = a, b
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -43,15 +43,15 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-           a    2.2240    0.0580     0.0006    0.0014   1884.0858    1.0019     1870.9888
-           b   -0.2550    0.0067     0.0001    0.0002   2003.0089    1.0016     1989.0854
+           a    2.2260    0.0580     0.0006    0.0012   2571.0592    1.0010     1827.3342
+           b   -0.2552    0.0066     0.0001    0.0001   2607.7752    1.0011     1853.4294
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
       Symbol   Float64   Float64   Float64   Float64   Float64
 
-           a    2.1104    2.1836    2.2234    2.2639    2.3381
-           b   -0.2681   -0.2595   -0.2550   -0.2505   -0.2421
+           a    2.1150    2.1863    2.2245    2.2649    2.3435
+           b   -0.2682   -0.2594   -0.2551   -0.2507   -0.2424
 </code></pre>
 <p>We can see that it took around half a second to compute 8000 posterior samples across 4 chains. The MCSE mean is 0 to two decimal places for both parameters, and both \(\hat{R}\) values are close to 1, indicating convergence and good mixing between chains. So let&#39;s have a look at the fit.</p>
 <h4 id=visualising_the_fit ><a href="#visualising_the_fit" class=header-anchor >Visualising the fit</a></h4>
@@ -152,8 +152,8 @@ fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 4.15 seconds
-Compute duration  = 3.86 seconds
+Wall duration     = 5.94 seconds
+Compute duration  = 5.55 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -161,13 +161,13 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-       sigma    0.0266    0.0004     0.0000    0.0000   3887.1380    1.0001     1006.2485
+       sigma    0.0267    0.0004     0.0000    0.0000   4162.7178    0.9999      750.5802
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
       Symbol   Float64   Float64   Float64   Float64   Float64
 
-       sigma    0.0259    0.0264    0.0266    0.0269    0.0274
+       sigma    0.0259    0.0264    0.0267    0.0269    0.0274
 </code></pre>
 <p>The model is fit just as before, and if we visualise the fit against the posterior median of the previous model it seems to be a lot better.</p>
 <pre><code class=language-julia ># get posterior median
@@ -241,8 +241,8 @@ fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 1.42 seconds
-Compute duration  = 1.39 seconds
+Wall duration     = 3.16 seconds
+Compute duration  = 3.12 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -250,7 +250,7 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse        ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64    Float64   Float64       Float64
 
-       sigma    0.0473    0.0000     0.0000    0.0000   801.3589    1.0007      576.5172
+       sigma    0.0473    0.0000     0.0000    0.0000   633.3367    1.0055      203.1227
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
@@ -307,24 +307,24 @@ fit_angle_distance_2 &#61; sample&#40;angle_distance_2_model,NUTS&#40;&#41;,MCMC
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 5.73 seconds
-Compute duration  = 5.69 seconds
+Wall duration     = 3.78 seconds
+Compute duration  = 3.73 seconds
 parameters        = sigma_angle, sigma_distance
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
 Summary Statistics
-      parameters      mean       std   naive_se      mcse       ess      rhat   ess_per_sec
-          Symbol   Float64   Float64    Float64   Float64   Float64   Float64       Float64
+      parameters      mean       std   naive_se      mcse       ess       rhat   ess_per_sec
+          Symbol   Float64   Float64    Float64   Float64   Float64    Float64       Float64
 
-     sigma_angle    0.0206    0.0090     0.0001    0.0009   16.1169    8.4368        2.8315
-  sigma_distance    0.1170    0.0214     0.0002    0.0023   16.6212    3.8383        2.9201
+     sigma_angle    0.0218    0.0147     0.0002    0.0016   16.0322   312.7898        4.2959
+  sigma_distance    0.1184    0.0326     0.0004    0.0035   16.0349    75.5601        4.2966
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
-     sigma_angle    0.0132    0.0133    0.0134    0.0280    0.0362
-  sigma_distance    0.0942    0.0942    0.1363    0.1373    0.1382
+     sigma_angle    0.0132    0.0133    0.0133    0.0219    0.0473
+  sigma_distance    0.0620    0.1171    0.1370    0.1375    0.1382
 </code></pre>
 <h4 id=a_bad_fit ><a href="#a_bad_fit" class=header-anchor >A bad fit</a></h4>
 <p>Now before we go jumping into our posterior predictive checks to try and confirm that our idea was as brilliant as we thought it was, let&#39;s take a quick look at the diagnostics provided by Turing. The ESS is very low &#40;~16&#41; and the \(\hat{R}\) values for both parameters are very large, indicated poor mixing. We can plot the chains to see if we can see anything obvious.</p>
@@ -360,8 +360,8 @@ fit_angle_distance_3 &#61; sample&#40;angle_distance_3_model,NUTS&#40;&#41;,MCMC
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 2.7 seconds
-Compute duration  = 2.65 seconds
+Wall duration     = 3.92 seconds
+Compute duration  = 3.86 seconds
 parameters        = sigma_angle, sigma_distance, sigma_y
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -369,17 +369,17 @@ Summary Statistics
       parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
           Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-     sigma_angle    0.0178    0.0001     0.0000    0.0000   3384.4583    0.9996     1278.6015
-  sigma_distance    0.0800    0.0013     0.0000    0.0000   3457.5784    0.9997     1306.2253
-         sigma_y    0.0031    0.0006     0.0000    0.0000   3620.7383    1.0013     1367.8649
+     sigma_angle    0.0178    0.0001     0.0000    0.0000   3838.0842    1.0002      993.8074
+  sigma_distance    0.0801    0.0013     0.0000    0.0000   3817.3409    0.9999      988.4363
+         sigma_y    0.0031    0.0006     0.0000    0.0000   4054.4565    1.0000     1049.8334
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
      sigma_angle    0.0176    0.0177    0.0178    0.0179    0.0180
-  sigma_distance    0.0775    0.0792    0.0800    0.0809    0.0825
-         sigma_y    0.0021    0.0026    0.0030    0.0034    0.0044
+  sigma_distance    0.0775    0.0792    0.0801    0.0809    0.0826
+         sigma_y    0.0021    0.0027    0.0030    0.0034    0.0044
 </code></pre>
 <pre><code class=language-julia ># get posterior median
 med_sigma_angle, med_sigma_distance, _ &#61; &#91;quantile&#40;Array&#40;fit_angle_distance_3&#41;&#91;:,i&#93;,0.5&#41; for i in 1:3&#93;
