@@ -149,7 +149,7 @@ println("LOO estimate is ",round(logistic_loo.loo[1],digits=2), " with an SE of 
 ```
 \show{logistic_loo}
 
-The estimate itself is relative so isn't exactly useful by itself, but we can see that the standard error is high, and the estimated number of parameters in the model is ~40, much larger than the true value of 1.
+The estimate itself is relative, so it isn't very useful in isolation, but we can see that the standard error is high, and the estimated number of parameters in the model is ~40, much larger than the true value of 1, indicating severe model misspecification.
 
 Another tool at our disposal is the PSIS-LOO probability integral transform. Oriol Abril has written a nice blog post on how to interpret the following plots[^loopit], and I'll quote directly from the post to give some intuition about this:
 
