@@ -525,7 +525,7 @@ compare(comparison_dict)
 
 If you've been wanting to do posterior predictive checks with your models in Turing and didn't know where to start, hopefully you've learnt something from this post and will be able to integrate these tools into your workflow.
 
-Thank you to all the hard work of the Turing and ArviZ developers, as well as everyone I've referenced here.
+Thank you to all the hard work of the Turing and ArviZ developers, as well as everyone I've referenced here, and thanks to [Jo Kroese](https://jokroese.com/) for helping me with the CSS, so now the images are actually big enough to see.
 
 ## References
 
