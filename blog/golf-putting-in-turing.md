@@ -79,7 +79,7 @@ fit_logistic = sample(logistic_model,NUTS(),MCMCThreads(),2000,4)
 ```
 \show{logistic_fit}
 
-Here we've computed 8000 posterior samples across 4 chains. The MCSE mean is 0 to two decimal places for both parameters, and both $\hat{R}$ values are close to 1, indicating convergence and good mixing between chains. So let's have a look at the fit.
+Here we've computed 8000 posterior samples across 4 chains. The MCSE of the mean is 0 to two decimal places for both parameters, and both $\hat{R}$ values are close to 1, indicating convergence and good mixing between chains. So let's have a look at the fit.
 
 #### Visualising the fit
 
