@@ -1,5 +1,5 @@
-<!doctype html> <!-- Minimal Mistakes Jekyll Theme 4.16.4 by Michael Rose Copyright 2013-2019 Michael Rose - mademistakes.com | @mmistakes Free for personal and commercial use under the MIT license https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE --> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/libs/katex/katex.min.css"> <link rel=stylesheet  href="/libs/highlight/github.min.css"> <link rel=stylesheet  href="/css/franklin.css"> <link rel=stylesheet  href="/css/minimal-mistakes.css"> <link rel=stylesheet  href="/css/adjust.css"> <link rel=icon  href="/assets/temp_fav.png"> <!--[if IE ]> <style> /* old IE unsupported flexbox fixes */ .greedy-nav .site-title { padding-right: 3em; } .greedy-nav button { position: absolute; top: 0; right: 0; height: 100%; } </style> <![endif]--> <title>Golf putting</title> <body class=layout--single > <div class=masthead > <div class=masthead__inner-wrap > <div class=masthead__menu > <nav id=site-nav  class=greedy-nav > <a class=site-title  href="/">Explorations in inference</a> <ul class=visible-links > <li class=masthead__menu-item ><a href="/blog/" >Blog</a> <li class=masthead__menu-item ><a href="/work/" >Publications & Awards</a> <li class=masthead__menu-item ><a href="/cv_placeholder.pdf" >CV</a> <li class=masthead__menu-item ><a href="/hobbies/">Other Interests</a> </ul> <button class="greedy-nav__toggle hidden" type=button > <span class=visually-hidden >Toggle menu</span> <div class=navicon ></div> </button> <ul class="hidden-links hidden"></ul> </nav> </div> </div> </div> <div class=initial-content > <div id=main  role=main > <div class="sidebar sticky"> <div itemscope itemtype="https://schema.org/Person"> <div class=author__avatar > <img src="/assets/portrait.jpg" alt=Me  itemprop=image > </div> <div class=author__content > <h3 class=author__name  itemprop=name >Joshua Burton</h3> <p class=author__bio  itemprop=description >PhD student at the University of Manchester, studying parameter inference using time series data in non-linear stochastic models.</p> </div> <div class=author__urls-wrapper > <button class="btn btn--inverse">Follow</button> <ul class="author__urls social-icons"> <li itemprop=homeLocation  itemscope itemtype="https://schema.org/Place"> <i class="fas fa-fw fa-map-marker-alt" aria-hidden=true ></i> <span itemprop=name >Manchester, United Kingdom</span> <li><a href="https://twitter.com/JoshuaBurtonUoM" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-twitter-square" aria-hidden=true ></i> Twitter</a> <li><a href="https://github.com/burtonjosh" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-github" aria-hidden=true ></i> GitHub</a> <li><a href="mailto:joshua.burton@manchester.ac.uk" rel="nofollow noopener noreferrer"><i class="fa fa-envelope" aria-hidden=true ></i> Email</a> </ul> </div> </div> </div> <div class=franklin-content ><h1 id=modelling_golf_putting_data_using_turing_and_arviz ><a href="#modelling_golf_putting_data_using_turing_and_arviz" class=header-anchor >Modelling golf putting data using Turing and ArviZ</a></h1> <p>The <a href="https://mc-stan.org/users/documentation/case-studies/golf.html">golf putting case study</a> in the Stan documentation is a really nice showcase of <em>iterative model building</em> in the context of MCMC. In this post I&#39;m going to demonstrate how the models in the Stan tutorial can be implemented with <a href="turing.ml/stable">Turing</a>, a Julia library for general-purpose probabilistic programming. This has already been done by Joshua Duncan<sup id="fnref:jduncan"><a href="#fndef:jduncan" class=fnref >[1]</a></sup>, so additionally I&#39;ll show how to make use of the <a href="https://julia.arviz.org/stable/">ArviZ.jl</a> package in order to do some posterior predictive analysis, specifically PSIS-LOO cross validation and LOO-PIT predictive checking. These are really powerful tools which can be used to help us evaluate our model fit, but I&#39;ll focus only on the implementation with Turing and ArviZ, so if you want to understand these tools and how to interpret them you can read about PSIS-LOO <a href="https://arxiv.org/pdf/1507.04544.pdf">here</a>, and LOO-PIT in Gelman et al. BDA &#40;2014&#41;, Section 6.3.</p> <p>For full details on each of the models, I suggest reading the case study in the Stan documentation, which is really nicely written and easy to follow.</p> <div class=franklin-toc ><ol><li><a href="#data_visualisation">Data visualisation</a><li><a href="#models">Models</a><ol><li><a href="#logistic_regression">Logistic regression</a><ol><li><a href="#fitting_the_model">Fitting the model</a><li><a href="#visualising_the_fit">Visualising the fit</a><li><a href="#evaluating_the_fit_using_elpd">Evaluating the fit using ELPD</a></ol><li><a href="#modelling_from_first_principles">Modelling from first principles</a><ol><li><a href="#posterior_predictive_checks">Posterior predictive checks</a></ol><li><a href="#an_extended_model_that_accounts_for_how_hard_the_ball_is_hit">An extended model that accounts for how hard the ball is hit</a><ol><li><a href="#a_bad_fit">A bad fit</a><li><a href="#a_good_fit">A good fit</a></ol></ol><li><a href="#model_selection">Model selection</a><li><a href="#conclusion">Conclusion</a><li><a href="#references">References</a></ol></div> <h2 id=data_visualisation ><a href="#data_visualisation" class=header-anchor >Data visualisation</a></h2> <p>The first thing to do is have a look at the data we have and see if we get any inspiration for a model.</p> <pre><code class=language-julia >using Turing, DelimitedFiles, StatsPlots, StatsFuns, ArviZ
-gr&#40;size&#61;&#40;580,300&#41;&#41;
+<!doctype html> <!-- Minimal Mistakes Jekyll Theme 4.16.4 by Michael Rose Copyright 2013-2019 Michael Rose - mademistakes.com | @mmistakes Free for personal and commercial use under the MIT license https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE --> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/libs/katex/katex.min.css"> <link rel=stylesheet  href="/libs/highlight/github.min.css"> <link rel=stylesheet  href="/css/franklin.css"> <link rel=stylesheet  href="/css/minimal-mistakes.css"> <link rel=stylesheet  href="/css/adjust.css"> <link rel=icon  href="/assets/temp_fav.png"> <!--[if IE ]> <style> /* old IE unsupported flexbox fixes */ .greedy-nav .site-title { padding-right: 3em; } .greedy-nav button { position: absolute; top: 0; right: 0; height: 100%; } </style> <![endif]--> <title>Golf putting</title> <body class=layout--single > <div class=masthead > <div class=masthead__inner-wrap > <div class=masthead__menu > <nav id=site-nav  class=greedy-nav > <a class=site-title  href="/">Explorations in inference</a> <ul class=visible-links > <li class=masthead__menu-item ><a href="/blog/" >Blog</a> <li class=masthead__menu-item ><a href="/work/" >Publications & Awards</a> <li class=masthead__menu-item ><a href="/cv_placeholder.pdf" >CV</a> <li class=masthead__menu-item ><a href="/hobbies/">Other Interests</a> </ul> <button class="greedy-nav__toggle hidden" type=button > <span class=visually-hidden >Toggle menu</span> <div class=navicon ></div> </button> <ul class="hidden-links hidden"></ul> </nav> </div> </div> </div> <div class=initial-content > <div id=main  role=main > <div class="sidebar sticky"> <div itemscope itemtype="https://schema.org/Person"> <div class=author__avatar > <img src="/assets/portrait.jpg" alt=Me  itemprop=image > </div> <div class=author__content > <h3 class=author__name  itemprop=name >Joshua Burton</h3> <p class=author__bio  itemprop=description >PhD student at the University of Manchester, studying parameter inference using time series data in non-linear stochastic models.</p> </div> <div class=author__urls-wrapper > <button class="btn btn--inverse">Follow</button> <ul class="author__urls social-icons"> <li itemprop=homeLocation  itemscope itemtype="https://schema.org/Place"> <i class="fas fa-fw fa-map-marker-alt" aria-hidden=true ></i> <span itemprop=name >Manchester, United Kingdom</span> <li><a href="https://twitter.com/JoshuaBurtonUoM" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-twitter-square" aria-hidden=true ></i> Twitter</a> <li><a href="https://github.com/burtonjosh" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-github" aria-hidden=true ></i> GitHub</a> <li><a href="mailto:joshua.burton@manchester.ac.uk" rel="nofollow noopener noreferrer"><i class="fa fa-envelope" aria-hidden=true ></i> Email</a> </ul> </div> </div> </div> <div class=franklin-content ><h1 id=posterior_predictive_checking_with_turing_and_arviz_using_the_golf_putting_case_study ><a href="#posterior_predictive_checking_with_turing_and_arviz_using_the_golf_putting_case_study" class=header-anchor >Posterior predictive checking with Turing and ArviZ, using the golf putting case study</a></h1> <p>The <a href="https://mc-stan.org/users/documentation/case-studies/golf.html">golf putting case study</a> in the Stan documentation is a really nice showcase of <em>iterative model building</em> in the context of MCMC. In this post I&#39;m going to demonstrate how the models in the Stan tutorial can be implemented with <a href="https://turing.ml/stable/">Turing</a>, a Julia library for general-purpose probabilistic programming. This has already been done by Joshua Duncan<sup id="fnref:jduncan"><a href="#fndef:jduncan" class=fnref >[1]</a></sup>, so additionally I&#39;ll show how to make use of the <a href="https://julia.arviz.org/stable/">ArviZ.jl</a> package in order to do some posterior predictive analysis, specifically PSIS-LOO cross validation and LOO-PIT predictive checking. These are really powerful tools which can be used to help us evaluate our model fit, but I&#39;ll focus only on the implementation with Turing and ArviZ, so if you want to understand these tools and how to interpret them you can read about PSIS-LOO <a href="https://arxiv.org/pdf/1507.04544.pdf">here</a>, and LOO-PIT in Gelman et al. BDA &#40;2014&#41;, Section 6.3.</p> <p>For full details on each of the models, I suggest reading the case study in the Stan documentation, which is really nicely written and easy to follow.</p> <div class=franklin-toc ><ol><li><a href="#data_visualisation">Data visualisation</a><li><a href="#models">Models</a><ol><li><a href="#logistic_regression">Logistic regression</a><ol><li><a href="#fitting_the_model">Fitting the model</a><li><a href="#visualising_the_fit">Visualising the fit</a><li><a href="#evaluating_the_fit_using_elpd">Evaluating the fit using ELPD</a></ol><li><a href="#modelling_from_first_principles">Modelling from first principles</a><ol><li><a href="#posterior_predictive_checks">Posterior predictive checks</a></ol><li><a href="#an_extended_model_that_accounts_for_how_hard_the_ball_is_hit">An extended model that accounts for how hard the ball is hit</a><ol><li><a href="#a_bad_fit">A bad fit</a><li><a href="#a_good_fit">A good fit</a></ol></ol><li><a href="#model_selection">Model selection</a><li><a href="#conclusion">Conclusion</a><li><a href="#references">References</a></ol></div> <h2 id=data_visualisation ><a href="#data_visualisation" class=header-anchor >Data visualisation</a></h2> <p>The first thing to do is have a look at the data we have and see if we get any inspiration for a model.</p> <pre><code class=language-julia >using Turing, DelimitedFiles, StatsPlots, StatsFuns, ArviZ
+gr&#40;size&#61;&#40;580,301&#41;&#41;
 
 # Turing can have quite verbose output, so I&#39;ll
 # suppress that for readability
@@ -34,8 +34,8 @@ fit_logistic &#61; sample&#40;logistic_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 1.5 seconds
-Compute duration  = 1.43 seconds
+Wall duration     = 1.78 seconds
+Compute duration  = 1.71 seconds
 parameters        = a, b
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -43,15 +43,15 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-           a    2.2239    0.0592     0.0007    0.0013   1855.3035    1.0018     1294.6989
-           b   -0.2550    0.0067     0.0001    0.0001   1958.1203    1.0011     1366.4482
+           a    2.2254    0.0566     0.0006    0.0011   2098.6408    1.0015     1224.4112
+           b   -0.2552    0.0065     0.0001    0.0001   2171.6420    1.0008     1267.0023
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
       Symbol   Float64   Float64   Float64   Float64   Float64
 
-           a    2.1103    2.1838    2.2222    2.2636    2.3431
-           b   -0.2688   -0.2595   -0.2549   -0.2505   -0.2420
+           a    2.1155    2.1863    2.2249    2.2641    2.3357
+           b   -0.2679   -0.2597   -0.2553   -0.2506   -0.2427
 </code></pre>
 <p>We can see that it took around half a second to compute 8000 posterior samples across 4 chains. The MCSE mean is 0 to two decimal places for both parameters, and both \(\hat{R}\) values are close to 1, indicating convergence and good mixing between chains. So let&#39;s have a look at the fit.</p>
 <h4 id=visualising_the_fit ><a href="#visualising_the_fit" class=header-anchor >Visualising the fit</a></h4>
@@ -108,7 +108,7 @@ idata_logistic &#61; from_mcmcchains&#40;fit_logistic;
 <pre><code class=language-julia >logistic_loo &#61; loo&#40;idata_logistic,pointwise&#61;true&#41;;
 println&#40;&quot;LOO estimate is &quot;,round&#40;logistic_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;logistic_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
         &quot; and an estimated number of parameters of &quot;,round&#40;logistic_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO estimate is -204.26 with an SE of 62.08 and an estimated number of parameters of 40.23
+<pre><code class="plaintext code-output">LOO estimate is -204.8 with an SE of 62.89 and an estimated number of parameters of 39.42
 </code></pre>
 <p>The estimate itself is relative so isn&#39;t exactly useful by itself, but we can see that the standard error is high, and the estimated number of parameters in the model is ~40, much larger than the true value of 1.</p>
 <p>Another tool at our disposal is the PSIS-LOO probability integral transform. Oriol Abril has written a nice blog post on how to interpret the following plots<sup id="fnref:loopit"><a href="#fndef:loopit" class=fnref >[3]</a></sup>, and I&#39;ll quote directly from the post to give some intuition about this:</p>
@@ -152,8 +152,8 @@ fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 6.59 seconds
-Compute duration  = 6.15 seconds
+Wall duration     = 7.04 seconds
+Compute duration  = 6.61 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -161,13 +161,13 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-       sigma    0.0267    0.0004     0.0000    0.0000   3421.2267    1.0007      556.2970
+       sigma    0.0267    0.0004     0.0000    0.0000   3269.2140    1.0014      494.4365
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
       Symbol   Float64   Float64   Float64   Float64   Float64
 
-       sigma    0.0259    0.0264    0.0266    0.0269    0.0275
+       sigma    0.0259    0.0264    0.0267    0.0269    0.0274
 </code></pre>
 <p>The model is fit just as before, and if we visualise the fit against the posterior median of the previous model it seems to be a lot better.</p>
 <pre><code class=language-julia ># get posterior median
@@ -219,7 +219,7 @@ idata_angle &#61; from_mcmcchains&#40;fit_angle;
 angle_loo &#61; loo&#40;idata_angle,pointwise&#61;true&#41;;
 println&#40;&quot;LOO is &quot;,round&#40;angle_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;angle_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
         &quot; and an estimated number of parameters of &quot;,round&#40;angle_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO is -88.92 with an SE of 12.71 and an estimated number of parameters of 8.02
+<pre><code class="plaintext code-output">LOO is -88.68 with an SE of 12.55 and an estimated number of parameters of 7.66
 </code></pre>
 <pre><code class=language-julia >plot_loo_pit&#40;idata_angle; y&#61;&quot;y&quot;&#41;</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit.png" alt="">
@@ -241,8 +241,8 @@ fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 1.6 seconds
-Compute duration  = 1.56 seconds
+Wall duration     = 1.62 seconds
+Compute duration  = 1.5 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -250,7 +250,7 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse        ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64    Float64   Float64       Float64
 
-       sigma    0.0473    0.0000     0.0000    0.0000   739.3094    1.0023      474.8294
+       sigma    0.0473    0.0000     0.0000    0.0000   669.7522    1.0014      445.6102
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
@@ -307,24 +307,24 @@ fit_angle_distance_2 &#61; sample&#40;angle_distance_2_model,NUTS&#40;&#41;,MCMC
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 3.02 seconds
-Compute duration  = 2.96 seconds
+Wall duration     = 4.36 seconds
+Compute duration  = 4.3 seconds
 parameters        = sigma_angle, sigma_distance
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
 Summary Statistics
-      parameters      mean       std   naive_se      mcse       ess       rhat   ess_per_sec
-          Symbol   Float64   Float64    Float64   Float64   Float64    Float64       Float64
+      parameters      mean       std   naive_se      mcse       ess      rhat   ess_per_sec
+          Symbol   Float64   Float64    Float64   Float64   Float64   Float64       Float64
 
-     sigma_angle    0.0240    0.0140     0.0002    0.0015   16.0446    22.0069        5.4132
-  sigma_distance    0.1012    0.0414     0.0005    0.0044   16.0333   115.1286        5.4094
+     sigma_angle    0.0249    0.0139     0.0002    0.0015   16.0333   72.8572        3.7313
+  sigma_distance    0.1085    0.0305     0.0003    0.0032   16.0343   84.9684        3.7315
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
-     sigma_angle    0.0132    0.0133    0.0157    0.0322    0.0473
-  sigma_distance    0.0363    0.0797    0.1148    0.1372    0.1381
+     sigma_angle    0.0132    0.0133    0.0189    0.0321    0.0473
+  sigma_distance    0.0654    0.0870    0.1148    0.1373    0.1381
 </code></pre>
 <h4 id=a_bad_fit ><a href="#a_bad_fit" class=header-anchor >A bad fit</a></h4>
 <p>Now before we go jumping into our posterior predictive checks to try and confirm that our idea was as brilliant as we thought it was, let&#39;s take a quick look at the diagnostics provided by Turing. The ESS is very low &#40;~16&#41; and the \(\hat{R}\) values for both parameters are very large, indicated poor mixing. We can plot the chains to see if we can see anything obvious.</p>
@@ -360,8 +360,8 @@ fit_angle_distance_3 &#61; sample&#40;angle_distance_3_model,NUTS&#40;&#41;,MCMC
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 4.05 seconds
-Compute duration  = 3.99 seconds
+Wall duration     = 3.42 seconds
+Compute duration  = 3.36 seconds
 parameters        = sigma_angle, sigma_distance, sigma_y
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -369,16 +369,16 @@ Summary Statistics
       parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
           Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-     sigma_angle    0.0178    0.0001     0.0000    0.0000   3544.8549    1.0004      889.3264
-  sigma_distance    0.0801    0.0013     0.0000    0.0000   3598.7065    1.0002      902.8366
-         sigma_y    0.0031    0.0006     0.0000    0.0000   4682.5987    1.0006     1174.7613
+     sigma_angle    0.0178    0.0001     0.0000    0.0000   3528.3614    1.0004     1051.0460
+  sigma_distance    0.0801    0.0013     0.0000    0.0000   3417.8214    1.0005     1018.1178
+         sigma_y    0.0031    0.0006     0.0000    0.0000   4078.7480    1.0005     1214.9979
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
      sigma_angle    0.0176    0.0177    0.0178    0.0179    0.0180
-  sigma_distance    0.0776    0.0792    0.0801    0.0809    0.0827
+  sigma_distance    0.0775    0.0793    0.0801    0.0810    0.0826
          sigma_y    0.0021    0.0026    0.0030    0.0034    0.0044
 </code></pre>
 <pre><code class=language-julia ># get posterior median
@@ -422,7 +422,7 @@ idata_distance &#61; from_mcmcchains&#40;fit_angle_distance_3;
 distance_loo &#61; loo&#40;idata_distance,pointwise&#61;true&#41;;
 println&#40;&quot;LOO is &quot;,round&#40;distance_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;distance_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
         &quot; and an estimated number of parameters of &quot;,round&#40;distance_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO is 127.36 with an SE of 5.0 and an estimated number of parameters of 5.03
+<pre><code class="plaintext code-output">LOO is 127.43 with an SE of 4.91 and an estimated number of parameters of 4.94
 </code></pre>
 <pre><code class=language-julia >plot_loo_pit&#40;idata_distance; y&#61;&quot;raw&quot;&#41;
 plot_loo_pit&#40;idata_distance; y&#61;&quot;raw&quot;,ecdf&#61;true&#41;
@@ -444,12 +444,12 @@ compare&#40;comparison_dict&#41;</code></pre>
  Row │ name              rank   loo             p_loo        d_loo     weight       se           dse      warning  loo_scale
      │ String            Int64  Float64         Float64      Float64   Float64      Float64      Float64  Bool     String
 ─────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   1 │ angle_distance_3      0     127.362         5.02558        0.0  1.0              4.99525      0.0     true  log
-   2 │ logistic              1  -72463.2        2660.22       72590.5  0.0          15930.9      15931.8     true  log
-   3 │ angle                 2      -1.90037e5     0.164854  190164.0  5.80183e-11  67980.4      67978.3     true  log</code></pre>
+   1 │ angle_distance_3      0     127.429         4.9392         0.0  1.0              4.91412      0.0    false  log
+   2 │ logistic              1  -72520.0        2867.29       72647.4  3.39007e-13  15924.3      15925.2     true  log
+   3 │ angle                 2      -1.90037e5     0.172228  190164.0  0.0          67980.4      67978.4     true  log</code></pre>
 <h2 id=conclusion ><a href="#conclusion" class=header-anchor >Conclusion</a></h2>
 <p>If you&#39;ve been wanting to do posterior predictive checks with your models in Turing and didn&#39;t know where to start, hopefully you&#39;ve learnt something from this post and will be able to integrate these tools into your workflow.</p>
-<p>Cheers to all the hard work of the Turing and ArviZ developers, as well as everyone I&#39;ve referenced here.</p>
+<p>Thank you to all the hard work of the Turing and ArviZ developers, as well as everyone I&#39;ve referenced here, and thanks to <a href="https://jokroese.com/">Jo Kroese</a> for helping me with the CSS, so now the images are actually big enough to see.</p>
 <h2 id=references ><a href="#references" class=header-anchor >References</a></h2>
 <p><table class=fndef  id="fndef:jduncan">
     <tr>

@@ -1,6 +1,6 @@
 # This file was generated, do not modify it. # hide
 using Turing, DelimitedFiles, StatsPlots, StatsFuns, ArviZ
-gr(size=(580,300))
+gr(size=(580,301))
 
 # Turing can have quite verbose output, so I'll
 # suppress that for readability
