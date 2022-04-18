@@ -1,8 +1,8 @@
 @def title = "Golf putting"
 
-# Modelling golf putting data using Turing and ArviZ
+# Posterior predictive checking with Turing and ArviZ, using the golf putting case study
 
-The [golf putting case study](https://mc-stan.org/users/documentation/case-studies/golf.html) in the Stan documentation is a really nice showcase of *iterative model building* in the context of MCMC. In this post I'm going to demonstrate how the models in the Stan tutorial can be implemented with [Turing](turing.ml/stable), a Julia library for general-purpose probabilistic programming. This has already been done by Joshua Duncan[^jduncan], so additionally I'll show how to make use of the [ArviZ.jl](https://julia.arviz.org/stable/) package in order to do some posterior predictive analysis, specifically PSIS-LOO cross validation and LOO-PIT predictive checking. These are really powerful tools which can be used to help us evaluate our model fit, but I'll focus only on the implementation with Turing and ArviZ, so if you want to understand these tools and how to interpret them you can read about PSIS-LOO [here](https://arxiv.org/pdf/1507.04544.pdf), and LOO-PIT in Gelman et al. BDA (2014), Section 6.3.
+The [golf putting case study](https://mc-stan.org/users/documentation/case-studies/golf.html) in the Stan documentation is a really nice showcase of *iterative model building* in the context of MCMC. In this post I'm going to demonstrate how the models in the Stan tutorial can be implemented with [Turing](https://turing.ml/stable/), a Julia library for general-purpose probabilistic programming. This has already been done by Joshua Duncan[^jduncan], so additionally I'll show how to make use of the [ArviZ.jl](https://julia.arviz.org/stable/) package in order to do some posterior predictive analysis, specifically PSIS-LOO cross validation and LOO-PIT predictive checking. These are really powerful tools which can be used to help us evaluate our model fit, but I'll focus only on the implementation with Turing and ArviZ, so if you want to understand these tools and how to interpret them you can read about PSIS-LOO [here](https://arxiv.org/pdf/1507.04544.pdf), and LOO-PIT in Gelman et al. BDA (2014), Section 6.3.
 
 For full details on each of the models, I suggest reading the case study in the Stan documentation, which is really nicely written and easy to follow.
 
@@ -13,7 +13,7 @@ For full details on each of the models, I suggest reading the case study in the 
 The first thing to do is have a look at the data we have and see if we get any inspiration for a model.
 ```julia:import_packages
 using Turing, DelimitedFiles, StatsPlots, StatsFuns, ArviZ
-gr(size=(580,300))
+gr(size=(580,301))
 
 # Turing can have quite verbose output, so I'll
 # suppress that for readability
@@ -525,7 +525,7 @@ compare(comparison_dict)
 
 If you've been wanting to do posterior predictive checks with your models in Turing and didn't know where to start, hopefully you've learnt something from this post and will be able to integrate these tools into your workflow.
 
-Cheers to all the hard work of the Turing and ArviZ developers, as well as everyone I've referenced here.
+Thank you to all the hard work of the Turing and ArviZ developers, as well as everyone I've referenced here.
 
 ## References
 
