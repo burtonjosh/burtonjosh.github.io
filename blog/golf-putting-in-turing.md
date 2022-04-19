@@ -537,3 +537,5 @@ Thank you to all the hard work of the Turing and ArviZ developers, as well as ev
 [^psisdiag]: Using the loo package (PSIS diagnostic plots). [https://mc-stan.org/loo/articles/loo2-example.html](https://mc-stan.org/loo/articles/loo2-example.html)
 
 [^wiigolf]: Anyone who's played Wii Sports Resort golf knows this [all too well](https://www.youtube.com/shorts/gaIIr_mPnj0).
+
+{{ addcomments }}
