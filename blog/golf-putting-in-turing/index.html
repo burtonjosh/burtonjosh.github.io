@@ -34,8 +34,8 @@ fit_logistic &#61; sample&#40;logistic_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 1.08 seconds
-Compute duration  = 1.03 seconds
+Wall duration     = 1.06 seconds
+Compute duration  = 1.01 seconds
 parameters        = a, b
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -43,15 +43,15 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-           a    2.2258    0.0594     0.0007    0.0014   1936.5510    1.0012     1878.3230
-           b   -0.2552    0.0068     0.0001    0.0002   1965.0893    1.0013     1906.0032
+           a    2.2246    0.0588     0.0007    0.0012   1958.7766    1.0012     1935.5500
+           b   -0.2550    0.0067     0.0001    0.0001   1979.0512    1.0016     1955.5842
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
       Symbol   Float64   Float64   Float64   Float64   Float64
 
-           a    2.1111    2.1853    2.2255    2.2645    2.3474
-           b   -0.2688   -0.2597   -0.2551   -0.2506   -0.2424
+           a    2.1112    2.1840    2.2244    2.2642    2.3408
+           b   -0.2682   -0.2595   -0.2549   -0.2506   -0.2422
 </code></pre>
 <p>Here we&#39;ve computed 8000 posterior samples across 4 chains. The MCSE of the mean is 0 to two decimal places for both parameters, and both \(\hat{R}\) values are close to 1, indicating convergence and good mixing between chains. So let&#39;s have a look at the fit.</p>
 <h4 id=visualising_the_fit ><a href="#visualising_the_fit" class=header-anchor >Visualising the fit</a></h4>
@@ -108,7 +108,7 @@ idata_logistic &#61; from_mcmcchains&#40;fit_logistic;
 <pre><code class=language-julia >logistic_loo &#61; loo&#40;idata_logistic,pointwise&#61;true&#41;;
 println&#40;&quot;LOO estimate is &quot;,round&#40;logistic_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;logistic_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
         &quot; and an estimated number of parameters of &quot;,round&#40;logistic_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO estimate is -205.06 with an SE of 62.41 and an estimated number of parameters of 42.12
+<pre><code class="plaintext code-output">LOO estimate is -207.68 with an SE of 65.11 and an estimated number of parameters of 43.15
 </code></pre>
 <p>The estimate itself is relative, so it isn&#39;t very useful in isolation, but we can see that the standard error is high, and the estimated number of parameters in the model is ~40, much larger than the true value of 1, indicating severe model misspecification.</p>
 <p>Another tool at our disposal is the PSIS-LOO probability integral transform. Oriol Abril has written a nice blog post on how to interpret the following plots<sup id="fnref:loopit"><a href="#fndef:loopit" class=fnref >[3]</a></sup>, and I&#39;ll quote directly from the post to give some intuition about this:</p>
@@ -152,8 +152,8 @@ fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 4.86 seconds
-Compute duration  = 4.54 seconds
+Wall duration     = 5.58 seconds
+Compute duration  = 5.21 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -161,13 +161,13 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-       sigma    0.0267    0.0004     0.0000    0.0000   4070.8114    1.0006      896.2597
+       sigma    0.0267    0.0004     0.0000    0.0000   3279.5583    1.0013      629.4738
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
       Symbol   Float64   Float64   Float64   Float64   Float64
 
-       sigma    0.0259    0.0264    0.0266    0.0269    0.0275
+       sigma    0.0259    0.0264    0.0266    0.0269    0.0274
 </code></pre>
 <p>The model is fit just as before, and if we visualise the fit against the posterior median of the previous model it seems to be a lot better.</p>
 <pre><code class=language-julia ># get posterior median
@@ -219,7 +219,7 @@ idata_angle &#61; from_mcmcchains&#40;fit_angle;
 angle_loo &#61; loo&#40;idata_angle,pointwise&#61;true&#41;;
 println&#40;&quot;LOO is &quot;,round&#40;angle_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;angle_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
         &quot; and an estimated number of parameters of &quot;,round&#40;angle_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO is -88.77 with an SE of 12.62 and an estimated number of parameters of 7.83
+<pre><code class="plaintext code-output">LOO is -89.03 with an SE of 12.85 and an estimated number of parameters of 8.08
 </code></pre>
 <pre><code class=language-julia >plot_loo_pit&#40;idata_angle; y&#61;&quot;y&quot;&#41;</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit.png" alt="">
@@ -241,8 +241,8 @@ fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 0.79 seconds
-Compute duration  = 0.75 seconds
+Wall duration     = 1.24 seconds
+Compute duration  = 1.2 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -250,7 +250,7 @@ Summary Statistics
   parameters      mean       std   naive_se      mcse        ess      rhat   ess_per_sec
       Symbol   Float64   Float64    Float64   Float64    Float64   Float64       Float64
 
-       sigma    0.0473    0.0000     0.0000    0.0000   695.3352    1.0055      922.1952
+       sigma    0.0473    0.0000     0.0000    0.0000   702.0252    1.0096      585.5089
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
@@ -307,8 +307,8 @@ fit_angle_distance_2 &#61; sample&#40;angle_distance_2_model,NUTS&#40;&#41;,MCMC
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 8.56 seconds
-Compute duration  = 8.52 seconds
+Wall duration     = 17.54 seconds
+Compute duration  = 17.49 seconds
 parameters        = sigma_angle, sigma_distance
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -316,15 +316,15 @@ Summary Statistics
       parameters      mean       std   naive_se      mcse       ess      rhat   ess_per_sec
           Symbol   Float64   Float64    Float64   Float64   Float64   Float64       Float64
 
-     sigma_angle    0.0134    0.0008     0.0000    0.0001   23.6194    1.1943        2.7735
-  sigma_distance    0.1357    0.0077     0.0001    0.0008   23.0958    1.2027        2.7120
+     sigma_angle    0.0230    0.0142     0.0002    0.0015   16.0507   18.5438        0.9176
+  sigma_distance    0.1039    0.0410     0.0005    0.0043   16.2094    5.9386        0.9266
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
-     sigma_angle    0.0132    0.0133    0.0133    0.0133    0.0171
-  sigma_distance    0.0946    0.1368    0.1372    0.1376    0.1383
+     sigma_angle    0.0132    0.0133    0.0134    0.0283    0.0473
+  sigma_distance    0.0386    0.0803    0.1365    0.1373    0.1381
 </code></pre>
 <h4 id=a_bad_fit ><a href="#a_bad_fit" class=header-anchor >A bad fit</a></h4>
 <p>Now before we go jumping into our posterior predictive checks to try and confirm that our idea was as brilliant as we thought it was, let&#39;s take a quick look at the diagnostics provided by Turing. The ESS is very low and the \(\hat{R}\) values for both parameters are much larger than 1, indicated poor mixing. We can plot the chains to see if we can see anything obvious.</p>
@@ -360,8 +360,8 @@ fit_angle_distance_3 &#61; sample&#40;angle_distance_3_model,NUTS&#40;&#41;,MCMC
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 2.3 seconds
-Compute duration  = 2.24 seconds
+Wall duration     = 3.19 seconds
+Compute duration  = 3.12 seconds
 parameters        = sigma_angle, sigma_distance, sigma_y
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -369,17 +369,17 @@ Summary Statistics
       parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
           Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-     sigma_angle    0.0178    0.0001     0.0000    0.0000   3452.5692    1.0004     1539.2640
-  sigma_distance    0.0801    0.0013     0.0000    0.0000   3364.6794    1.0006     1500.0800
-         sigma_y    0.0031    0.0006     0.0000    0.0000   4429.5938    1.0010     1974.8524
+     sigma_angle    0.0178    0.0001     0.0000    0.0000   4056.1169    0.9999     1298.7886
+  sigma_distance    0.0801    0.0013     0.0000    0.0000   4089.2894    0.9998     1309.4106
+         sigma_y    0.0031    0.0006     0.0000    0.0000   4523.1463    1.0006     1448.3337
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
      sigma_angle    0.0176    0.0177    0.0178    0.0179    0.0180
-  sigma_distance    0.0775    0.0792    0.0801    0.0809    0.0825
-         sigma_y    0.0021    0.0026    0.0030    0.0034    0.0044
+  sigma_distance    0.0775    0.0792    0.0801    0.0809    0.0826
+         sigma_y    0.0021    0.0026    0.0030    0.0034    0.0043
 </code></pre>
 <pre><code class=language-julia ># get posterior median
 med_sigma_angle, med_sigma_distance, _ &#61; &#91;quantile&#40;Array&#40;fit_angle_distance_3&#41;&#91;:,i&#93;,0.5&#41; for i in 1:3&#93;
@@ -422,7 +422,7 @@ idata_distance &#61; from_mcmcchains&#40;fit_angle_distance_3;
 distance_loo &#61; loo&#40;idata_distance,pointwise&#61;true&#41;;
 println&#40;&quot;LOO is &quot;,round&#40;distance_loo.loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;distance_loo.loo_se&#91;1&#93;,digits&#61;2&#41;,
         &quot; and an estimated number of parameters of &quot;,round&#40;distance_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO is 127.36 with an SE of 4.97 and an estimated number of parameters of 5.02
+<pre><code class="plaintext code-output">LOO is 127.45 with an SE of 4.96 and an estimated number of parameters of 4.94
 </code></pre>
 <pre><code class=language-julia >plot_loo_pit&#40;idata_distance; y&#61;&quot;raw&quot;&#41;
 plot_loo_pit&#40;idata_distance; y&#61;&quot;raw&quot;,ecdf&#61;true&#41;
@@ -444,9 +444,9 @@ compare&#40;comparison_dict&#41;</code></pre>
  Row │ name              rank   loo             p_loo        d_loo     weight       se           dse      warning  loo_scale
      │ String            Int64  Float64         Float64      Float64   Float64      Float64      Float64  Bool     String
 ─────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   1 │ angle_distance_3      0     127.364         5.01575        0.0  1.0              4.97308      0.0     true  log
-   2 │ logistic              1  -72480.8        2765.23       72608.1  2.36422e-12  15946.0      15946.9     true  log
-   3 │ angle                 2      -1.90037e5     0.166211  190164.0  1.2938e-10   67980.4      67978.4     true  log</code></pre>
+   1 │ angle_distance_3      0     127.451         4.93623        0.0  1.0              4.95634      0.0     true  log
+   2 │ logistic              1  -72587.3        2941.08       72714.8  6.32661e-13  15972.7      15973.6     true  log
+   3 │ angle                 2      -1.90037e5     0.152504  190164.0  0.0          67980.4      67978.3     true  log</code></pre>
 <h2 id=conclusion ><a href="#conclusion" class=header-anchor >Conclusion</a></h2>
 <p>If you&#39;ve been wanting to do posterior predictive checks with your models in Turing and didn&#39;t know where to start, hopefully you&#39;ve learnt something from this post and will be able to integrate these tools into your workflow.</p>
 <p>Thank you to all the hard work of the Turing and ArviZ developers, as well as everyone I&#39;ve referenced here, and thanks to <a href="https://jokroese.com/">Jo Kroese</a> for helping me with the CSS, so now the images are actually big enough to see.</p>
