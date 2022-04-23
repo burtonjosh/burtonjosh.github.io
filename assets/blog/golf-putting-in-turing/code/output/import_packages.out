@@ -1,18 +1,18 @@
 Collecting dask
   Downloading dask-2022.4.1-py3-none-any.whl (1.1 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 49.4 MB/s eta 0:00:00
-Collecting fsspec>=0.6.0
-  Downloading fsspec-2022.3.0-py3-none-any.whl (136 kB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 136.1/136.1 KB 35.2 MB/s eta 0:00:00
-Collecting pyyaml>=5.3.1
-  Downloading PyYAML-6.0-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl (701 kB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 701.2/701.2 KB 74.2 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 33.0 MB/s eta 0:00:00
+Requirement already satisfied: packaging>=20.0 in /opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages (from dask) (21.3)
 Collecting toolz>=0.8.2
   Downloading toolz-0.11.2-py3-none-any.whl (55 kB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 55.8/55.8 KB 18.2 MB/s eta 0:00:00
-Requirement already satisfied: packaging>=20.0 in /opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages (from dask) (21.3)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 55.8/55.8 KB 19.0 MB/s eta 0:00:00
+Collecting pyyaml>=5.3.1
+  Downloading PyYAML-6.0-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl (701 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 701.2/701.2 KB 86.3 MB/s eta 0:00:00
 Collecting partd>=0.3.10
   Downloading partd-1.2.0-py3-none-any.whl (19 kB)
+Collecting fsspec>=0.6.0
+  Downloading fsspec-2022.3.0-py3-none-any.whl (136 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 136.1/136.1 KB 41.5 MB/s eta 0:00:00
 Collecting cloudpickle>=1.1.1
   Downloading cloudpickle-2.0.0-py3-none-any.whl (25 kB)
 Requirement already satisfied: pyparsing!=3.0.5,>=2.0.2 in /opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages (from packaging>=20.0->dask) (3.0.8)
