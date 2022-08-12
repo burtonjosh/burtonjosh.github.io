@@ -5,7 +5,7 @@ inference on delayed stochastic non-linear models of gene regulation, using time
 
 I've also contributed to the work done by the Scientific Pandemic Influenza Group on Modelling (SPI-M) in response to COVID-19. You can read more about my work [here](/work).
 
-I'm currently visiting [Dr. Arno Solin's](https://users.aalto.fi/~asolin/group/) group in Aalto University, Finland, where I'm learning about state of the art methods for parameter inference in stochastic differential equation systems.
+From March to May 2022 I visited [Dr. Arno Solin's](https://users.aalto.fi/~asolin/group/) group in Aalto University, Finland, where I learnt about state of the art methods for parameter inference in stochastic differential equation systems.
 
 ## Selected posts from my blog
 
