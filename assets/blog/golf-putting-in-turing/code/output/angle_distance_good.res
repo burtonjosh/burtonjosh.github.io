@@ -12,14 +12,14 @@ Summary Statistics
       parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
           Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
 
-     sigma_angle    0.0178    0.0001     0.0000    0.0000   3092.6867    1.0012     1214.2468
-  sigma_distance    0.0801    0.0013     0.0000    0.0000   3084.8639    1.0015     1211.1755
-         sigma_y    0.0031    0.0006     0.0000    0.0000   4497.0214    1.0019     1765.6150
+     sigma_angle    0.0178    0.0001     0.0000    0.0000   3389.6615    1.0011     1327.7170
+  sigma_distance    0.0801    0.0013     0.0000    0.0000   3479.3977    1.0009     1362.8663
+         sigma_y    0.0031    0.0006     0.0000    0.0000   4396.7402    1.0000     1722.1857
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
      sigma_angle    0.0176    0.0177    0.0178    0.0179    0.0180
-  sigma_distance    0.0774    0.0792    0.0801    0.0809    0.0827
+  sigma_distance    0.0776    0.0792    0.0801    0.0809    0.0827
          sigma_y    0.0021    0.0026    0.0030    0.0034    0.0044
