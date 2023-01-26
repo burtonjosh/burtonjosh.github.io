@@ -13,10 +13,10 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
 # construct idata object
-idata_logistic = from_mcmcchains(fit_logistic;
-                        posterior_predictive=posterior_predictive,
-                        log_likelihood=Dict("ll" => loglikelihoods_arr),
-                        library="Turing",
-                        observed_data=Dict("x" => x,
-                                           "n" => n,
-                                           "y" => y));
+idata_logistic = from_mcmcchains(
+    fit_logistic;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(; x, n, y)
+);

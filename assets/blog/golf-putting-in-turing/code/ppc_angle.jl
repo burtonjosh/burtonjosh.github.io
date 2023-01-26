@@ -10,14 +10,14 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 # Reshape into `(nchains, nsamples, size(y)...)`
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
-idata_angle = from_mcmcchains(fit_angle;
-                              posterior_predictive=posterior_predictive,
-                              log_likelihood=Dict("ll" => loglikelihoods_arr),
-                              library="Turing",
-                              observed_data=Dict("x" => x,
-                                                 "n" => n,
-                                                 "y" => y));
+idata_angle = from_mcmcchains(
+    fit_angle;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(;x, n, y)
+);
 
 angle_loo = loo(idata_angle,pointwise=true);
-println("LOO is ",round(angle_loo.loo[1],digits=2), " with an SE of ",round(angle_loo.loo_se[1],digits=2),
+println("LOO is ",round(angle_loo.elpd_loo[1],digits=2), " with an SE of ",round(angle_loo.se[1],digits=2),
         " and an estimated number of parameters of ",round(angle_loo.p_loo[1],digits=2))

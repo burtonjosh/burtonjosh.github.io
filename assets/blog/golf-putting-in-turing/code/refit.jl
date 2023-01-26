@@ -14,13 +14,13 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 # Reshape into `(nchains, nsamples, size(y)...)`
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
-idata_logistic = from_mcmcchains(fit_logistic;
-                        posterior_predictive=posterior_predictive,
-                        log_likelihood=Dict("ll" => loglikelihoods_arr),
-                        library="Turing",
-                        observed_data=Dict("x" => x_new,
-                                           "n" => n_new,
-                                           "y" => y_new))
+idata_logistic = from_mcmcchains(
+    fit_logistic;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(; y_new)
+)
 
 angle_model = golf_angle(x_new,y_new,n_new,r,R)
 fit_angle = sample(angle_model,NUTS(),MCMCThreads(),2000,4)
@@ -35,10 +35,10 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 # Reshape into `(nchains, nsamples, size(y)...)`
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
-idata_angle = from_mcmcchains(fit_angle;
-                        posterior_predictive=posterior_predictive,
-                        log_likelihood=Dict("ll" => loglikelihoods_arr),
-                        library="Turing",
-                        observed_data=Dict("x" => x_new,
-                                           "n" => n_new,
-                                           "y" => y_new));
+idata_angle = from_mcmcchains(
+    fit_angle;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(; y_new)
+);

@@ -11,7 +11,7 @@ post_line = p_angle .* p_distance
 
 plot(x_new,post_line,color=:blue,legend=:false)
 
-scatter!(x_new,y_new ./ n_new, yerror = yerror_new,
+scatter!(x_new,y, yerror = yerror_new,
         ylabel = "Probability of success",
         xlabel = "Distance from hole (feet)",
         title = "Angle and distance model (good fit)",
