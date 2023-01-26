@@ -1,5 +1,7 @@
 @def title = "Joshua Burton"
 
+I am currently looking for roles where I can apply mathematics, statistics and software development skills. Take a look at my [CV](/joshua_burton_cv.pdf) or get in touch with me!
+
 I'm a PhD student at the University of Manchester researching methods for doing parameter
 inference on delayed stochastic non-linear models of gene regulation, using time series data of gene expression dynamics at single cell resolution. This research uses mathematical approaches to help us understand how cells make decisions regarding fate, especially in the context of development and cancer.
 

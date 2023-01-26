@@ -130,13 +130,13 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
 # construct idata object
-idata_logistic = from_mcmcchains(fit_logistic;
-                        posterior_predictive=posterior_predictive,
-                        log_likelihood=Dict("ll" => loglikelihoods_arr),
-                        library="Turing",
-                        observed_data=Dict("x" => x,
-                                           "n" => n,
-                                           "y" => y));
+idata_logistic = from_mcmcchains(
+    fit_logistic;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(; x, n, y)
+);
 ```
 With this `InferenceData` object we can utilise some powerful analysis and visualisation tools in ArviZ.
 
@@ -144,7 +144,7 @@ For example, we can now easily estimate the ELPD with PSIS-LOO.
 
 ```julia:logistic_loo
 logistic_loo = loo(idata_logistic,pointwise=true);
-println("LOO estimate is ",round(logistic_loo.loo[1],digits=2), " with an SE of ",round(logistic_loo.loo_se[1],digits=2),
+println("LOO estimate is ",round(logistic_loo.elpd_loo[1],digits=2), " with an SE of ",round(logistic_loo.se[1],digits=2),
         " and an estimated number of parameters of ",round(logistic_loo.p_loo[1],digits=2))
 ```
 \show{logistic_loo}
@@ -252,16 +252,16 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 # Reshape into `(nchains, nsamples, size(y)...)`
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
-idata_angle = from_mcmcchains(fit_angle;
-                              posterior_predictive=posterior_predictive,
-                              log_likelihood=Dict("ll" => loglikelihoods_arr),
-                              library="Turing",
-                              observed_data=Dict("x" => x,
-                                                 "n" => n,
-                                                 "y" => y));
+idata_angle = from_mcmcchains(
+    fit_angle;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(;x, n, y)
+);
 
 angle_loo = loo(idata_angle,pointwise=true);
-println("LOO is ",round(angle_loo.loo[1],digits=2), " with an SE of ",round(angle_loo.loo_se[1],digits=2),
+println("LOO is ",round(angle_loo.elpd_loo[1],digits=2), " with an SE of ",round(angle_loo.se[1],digits=2),
         " and an estimated number of parameters of ",round(angle_loo.p_loo[1],digits=2))
 ```
 \show{ppc_angle}
@@ -290,7 +290,8 @@ If this wasn't enough to convince you that the model isn't great, there is actua
 ```julia:fit_angle_new
 data_new = readdlm("_assets/blog/golf-putting-in-turing/code/golf_data_new.txt")
 x_new, n_new, y_new = data_new[:,1], data_new[:,2], data_new[:,3];
-yerror_new = sqrt.(y_new./n_new .* (1 .-y_new./n_new)./n_new);
+y = y_new./n_new
+yerror_new = sqrt.(y .* (1 .-y)./n_new);
 
 angle_model = golf_angle(x_new,y_new,n_new,r,R)
 fit_angle = sample(angle_model,NUTS(),MCMCThreads(),2000,4)
@@ -303,7 +304,7 @@ med_sigma = quantile(Array(fit_angle),0.5)
 
 threshold_angle = asin.((R-r) ./ x_new)
 plot(x_new,2 .* cdf.(Normal(),threshold_angle ./ med_sigma) .- 1,color=:blue,linewidth=1.5)
-scatter!(x_new,y_new ./ n_new, yerror = yerror_new,
+scatter!(x_new,y, yerror = yerror_new,
         ylabel = "Probability of success",
         xlabel = "Distance from hole (feet)",
         title = "New data, old model",
@@ -376,7 +377,7 @@ The chains are definitely not mixing, and it looks like they are getting stuck i
 The solution given is to approximate the Binomial data distribution with a Normal and then add independent variance. This forces (helps?) the model to not fit *so* well to certain data points to the detriment of others, improving the *overall* fit.
 
 ```julia:angle_distance_good
-@model function golf_angle_distance_3(x,raw,n,r,R,overshot,distance_tolerance)
+@model function golf_angle_distance_3(x,y,n,r,R,overshot,distance_tolerance)
     sigma_angle ~ truncated(Normal(),0,Inf)
     sigma_distance ~ truncated(Normal(),0,Inf)    
     sigma_y ~ truncated(Normal(),0,Inf)
@@ -388,12 +389,12 @@ The solution given is to approximate the Binomial data distribution with a Norma
     p = p_angle .* p_distance
 
     for i in 1:length(n)
-        raw[i] ~ Normal(p[i], sqrt(p[i] * (1 - p[i]) / n[i] + sigma_y^2));
+        y[i] ~ Normal(p[i], sqrt(p[i] * (1 - p[i]) / n[i] + sigma_y^2));
     end
     return sigma_angle*180/π
 end
 
-angle_distance_3_model = golf_angle_distance_3(x_new,y_new./n_new,n_new,r,R,overshot,distance_tolerance)
+angle_distance_3_model = golf_angle_distance_3(x_new,y,n_new,r,R,overshot,distance_tolerance)
 fit_angle_distance_3 = sample(angle_distance_3_model,NUTS(),MCMCThreads(),2000,4) # hide
 fit_angle_distance_3 = sample(angle_distance_3_model,NUTS(),MCMCThreads(),2000,4)
 ```
@@ -412,7 +413,7 @@ post_line = p_angle .* p_distance
 
 plot(x_new,post_line,color=:blue,legend=:false)
 
-scatter!(x_new,y_new ./ n_new, yerror = yerror_new,
+scatter!(x_new,y, yerror = yerror_new,
         ylabel = "Probability of success",
         xlabel = "Distance from hole (feet)",
         title = "Angle and distance model (good fit)",
@@ -427,7 +428,7 @@ So far so good. The moment of truth:
 
 ```julia:good_idata
 # Instantiate the predictive model
-angle_distance_3_predict = golf_angle_distance_3(x_new,similar(y_new./n_new, Missing),n_new,r,R,overshot,distance_tolerance)
+angle_distance_3_predict = golf_angle_distance_3(x_new,similar(y, Missing),n_new,r,R,overshot,distance_tolerance)
 posterior_predictive = predict(angle_distance_3_predict, fit_angle_distance_3)
 
 # Ensure the ordering of the loglikelihoods matches the ordering of `posterior_predictive`
@@ -437,23 +438,23 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 # Reshape into `(nchains, nsamples, size(y)...)`
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
-idata_distance = from_mcmcchains(fit_angle_distance_3;
-                                 posterior_predictive=posterior_predictive,
-                                 log_likelihood=Dict("ll" => loglikelihoods_arr),
-                                 library="Turing",
-                                 observed_data=Dict("x" => x_new,
-                                                    "n" => n_new,
-                                                    "raw" => y_new./n_new));
+idata_distance = from_mcmcchains(
+    fit_angle_distance_3;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(; y)
+);
 distance_loo = loo(idata_distance,pointwise=true);
-println("LOO is ",round(distance_loo.loo[1],digits=2), " with an SE of ",round(distance_loo.loo_se[1],digits=2),
+println("LOO is ",round(distance_loo.elpd_loo[1],digits=2), " with an SE of ",round(distance_loo.se[1],digits=2),
         " and an estimated number of parameters of ",round(distance_loo.p_loo[1],digits=2))
 ```
 \show{good_idata}
 
 ```
-plot_loo_pit(idata_distance; y="raw")
-plot_loo_pit(idata_distance; y="raw",ecdf=true)
-plot_khat(logistic_loo)
+plot_loo_pit(idata_distance; y="y")
+plot_loo_pit(idata_distance; y="y",ecdf=true)
+plot_khat(distance_loo)
 ```
 
 \fig{../images/distance_loo_pit_new.png}
@@ -483,13 +484,13 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 # Reshape into `(nchains, nsamples, size(y)...)`
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
-idata_logistic = from_mcmcchains(fit_logistic;
-                        posterior_predictive=posterior_predictive,
-                        log_likelihood=Dict("ll" => loglikelihoods_arr),
-                        library="Turing",
-                        observed_data=Dict("x" => x_new,
-                                           "n" => n_new,
-                                           "y" => y_new))
+idata_logistic = from_mcmcchains(
+    fit_logistic;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(; y_new)
+)
 
 angle_model = golf_angle(x_new,y_new,n_new,r,R)
 fit_angle = sample(angle_model,NUTS(),MCMCThreads(),2000,4)
@@ -504,13 +505,13 @@ loglikelihoods_vals = getindex.(Ref(loglikelihoods), names)
 # Reshape into `(nchains, nsamples, size(y)...)`
 loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=3), (2, 1, 3));
 
-idata_angle = from_mcmcchains(fit_angle;
-                        posterior_predictive=posterior_predictive,
-                        log_likelihood=Dict("ll" => loglikelihoods_arr),
-                        library="Turing",
-                        observed_data=Dict("x" => x_new,
-                                           "n" => n_new,
-                                           "y" => y_new));
+idata_angle = from_mcmcchains(
+    fit_angle;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=Dict("ll" => loglikelihoods_arr),
+    library="Turing",
+    observed_data=(; y_new)
+);
 ```
 
 ```julia:compare
