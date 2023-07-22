@@ -17,7 +17,7 @@ Collecting pyyaml>=5.3.1 (from dask)
   Downloading PyYAML-6.0.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (2.1 kB)
 Collecting toolz>=0.10.0 (from dask)
   Downloading toolz-0.12.0-py3-none-any.whl (55 kB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 55.8/55.8 kB 8.3 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 55.8/55.8 kB 5.0 MB/s eta 0:00:00
 Collecting importlib-metadata>=4.13.0 (from dask)
   Obtaining dependency information for importlib-metadata>=4.13.0 from https://files.pythonhosted.org/packages/cc/37/db7ba97e676af155f5fcb1a35466f446eadc9104e25b83366e8088c9c926/importlib_metadata-6.8.0-py3-none-any.whl.metadata
   Downloading importlib_metadata-6.8.0-py3-none-any.whl.metadata (5.1 kB)
@@ -25,14 +25,14 @@ Requirement already satisfied: zipp>=0.5 in /opt/hostedtoolcache/Python/3.8.17/x
 Collecting locket (from partd>=1.2.0->dask)
   Downloading locket-1.0.0-py2.py3-none-any.whl (4.4 kB)
 Downloading dask-2023.5.0-py3-none-any.whl (1.2 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 65.1 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 9.0 MB/s eta 0:00:00
 Downloading click-8.1.6-py3-none-any.whl (97 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 97.9/97.9 kB 29.4 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 97.9/97.9 kB 16.4 MB/s eta 0:00:00
 Downloading fsspec-2023.6.0-py3-none-any.whl (163 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 163.8/163.8 kB 45.2 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 163.8/163.8 kB 12.3 MB/s eta 0:00:00
 Downloading importlib_metadata-6.8.0-py3-none-any.whl (22 kB)
 Downloading PyYAML-6.0.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (736 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 736.6/736.6 kB 83.9 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 736.6/736.6 kB 16.3 MB/s eta 0:00:00
 Installing collected packages: toolz, pyyaml, locket, importlib-metadata, fsspec, cloudpickle, click, partd, dask
 Successfully installed click-8.1.6 cloudpickle-2.2.1 dask-2023.5.0 fsspec-2023.6.0 importlib-metadata-6.8.0 locket-1.0.0 partd-1.4.0 pyyaml-6.0.1 toolz-0.12.0
 Try installing dask using pip? [Y/n]: 

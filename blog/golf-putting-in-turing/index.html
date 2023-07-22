@@ -95,28 +95,38 @@
 <div class="franklin-toc"><ol><li><a href="#data_visualisation">Data visualisation</a></li><li><a href="#models">Models</a><ol><li><a href="#logistic_regression">Logistic regression</a><ol><li><a href="#fitting_the_model">Fitting the model</a></li><li><a href="#visualising_the_fit">Visualising the fit</a></li><li><a href="#evaluating_the_fit_using_elpd">Evaluating the fit using ELPD</a></li></ol></li><li><a href="#modelling_from_first_principles">Modelling from first principles</a><ol><li><a href="#posterior_predictive_checks">Posterior predictive checks</a></li></ol></li><li><a href="#an_extended_model_that_accounts_for_how_hard_the_ball_is_hit">An extended model that accounts for how hard the ball is hit</a><ol><li><a href="#a_bad_fit">A bad fit</a></li><li><a href="#a_good_fit">A good fit</a></li></ol></li></ol></li><li><a href="#model_selection">Model selection</a></li><li><a href="#conclusion">Conclusion</a></li><li><a href="#references">References</a></li></ol></div>
 <h2 id="data_visualisation"><a href="#data_visualisation" class="header-anchor">Data visualisation</a></h2>
 <p>The first thing to do is have a look at the data we have and see if we get any inspiration for a model.</p>
-<pre><code class="language-julia">using Turing, DelimitedFiles, StatsPlots, StatsFuns, ArviZ
-gr&#40;size&#61;&#40;580,301&#41;&#41;
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> Turing, DelimitedFiles, StatsPlots, StatsFuns, ArviZ
+gr(size=(<span class="hljs-number">580</span>,<span class="hljs-number">301</span>))
 
-# Turing can have quite verbose output, so I&#39;ll
-# suppress that for readability
-# It&#39;s usually a good idea to not do this,
-# so you are warned of any divergences
-import Logging
-Logging.disable_logging&#40;Logging.Warn&#41;; # or e.g. Logging.Info</code></pre>
-<pre><code class="language-julia">data &#61; readdlm&#40;&quot;_assets/blog/golf-putting-in-turing/code/golf_data_old.txt&quot;&#41;
-x, n, y &#61; data&#91;:,1&#93;, data&#91;:,2&#93;, data&#91;:,3&#93;;
-yerror &#61; sqrt.&#40;y./n .* &#40;1 .-y./n&#41;./n&#41;
+<span class="hljs-comment"># Turing can have quite verbose output, so I&#x27;ll</span>
+<span class="hljs-comment"># suppress that for readability</span>
+<span class="hljs-comment"># It&#x27;s usually a good idea to not do this,</span>
+<span class="hljs-comment"># so you are warned of any divergences</span>
+<span class="hljs-keyword">import</span> Logging
+Logging.disable_logging(Logging.Warn); <span class="hljs-comment"># or e.g. Logging.Info</span></code></pre>
+<pre><code class="julia hljs">data = readdlm(<span class="hljs-string">&quot;_assets/blog/golf-putting-in-turing/code/golf_data_old.txt&quot;</span>)
+x, n, y = data[:,<span class="hljs-number">1</span>], data[:,<span class="hljs-number">2</span>], data[:,<span class="hljs-number">3</span>];
+yerror = sqrt.(y./n .* (<span class="hljs-number">1</span> .-y./n)./n)
 
-scatter&#40;x,y ./ n, yerror &#61; yerror,
-        ylabel &#61; &quot;Probability of success&quot;,
-        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
-        title &#61; &quot;Data on putts in pro golf&quot;,
-        legend&#61;:false,
-        color&#61;:lightblue,
-        &#41;</code></pre>
+scatter(x,y ./ n, yerror = yerror,
+        ylabel = <span class="hljs-string">&quot;Probability of success&quot;</span>,
+        xlabel = <span class="hljs-string">&quot;Distance from hole (feet)&quot;</span>,
+        title = <span class="hljs-string">&quot;Data on putts in pro golf&quot;</span>,
+        legend=:<span class="hljs-literal">false</span>,
+        color=:lightblue,
+        )</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/output/initial_data.svg" alt="">
-<p>The error bars associated with each point \(j\) in the plot are given by \(\sqrt{\hat{p}_j(1−\hat{p}_j)/n_j}\), where \(\hat{p}_j=y_j/n_j\) is the success rate for putts taken at distance \(x_j\).</p>
+<p>The error bars associated with each point <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>j</mi></mrow><annotation encoding="application/x-tex">j</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.854em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span></span></span></span> in the plot are given by <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msqrt><mrow><msub><mover accent="true"><mi>p</mi><mo>^</mo></mover><mi>j</mi></msub><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><msub><mover accent="true"><mi>p</mi><mo>^</mo></mover><mi>j</mi></msub><mo stretchy="false">)</mo><mi mathvariant="normal">/</mi><msub><mi>n</mi><mi>j</mi></msub></mrow></msqrt></mrow><annotation encoding="application/x-tex">\sqrt{\hat{p}_j(1−\hat{p}_j)/n_j}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.24em;vertical-align:-0.3231em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9169em;"><span class="svg-align" style="top:-3.2em;"><span class="pstrut" style="height:3.2em;"></span><span class="mord" style="padding-left:1em;"><span class="mord"><span class="mord accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">p</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">p</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mord">/</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span><span style="top:-2.8769em;"><span class="pstrut" style="height:3.2em;"></span><span class="hide-tail" style="min-width:1.02em;height:1.28em;"><svg xmlns="http://www.w3.org/2000/svg" width='400em' height='1.28em' viewBox='0 0 400000 1296' preserveAspectRatio='xMinYMin slice'><path d='M263,681c0.7,0,18,39.7,52,119
+c34,79.3,68.167,158.7,102.5,238c34.3,79.3,51.8,119.3,52.5,120
+c340,-704.7,510.7,-1060.3,512,-1067
+l0 -0
+c4.7,-7.3,11,-11,19,-11
+H40000v40H1012.3
+s-271.3,567,-271.3,567c-38.7,80.7,-84,175,-136,283c-52,108,-89.167,185.3,-111.5,232
+c-22.3,46.7,-33.8,70.3,-34.5,71c-4.7,4.7,-12.3,7,-23,7s-12,-1,-12,-1
+s-109,-253,-109,-253c-72.7,-168,-109.3,-252,-110,-252c-10.7,8,-22,16.7,-34,26
+c-22,17.3,-33.3,26,-34,26s-26,-26,-26,-26s76,-59,76,-59s76,-60,76,-60z
+M1001 80h400000v40h-400000z'/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3231em;"><span></span></span></span></span></span></span></span></span>, where <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover accent="true"><mi>p</mi><mo>^</mo></mover><mi>j</mi></msub><mo>=</mo><msub><mi>y</mi><mi>j</mi></msub><mi mathvariant="normal">/</mi><msub><mi>n</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">\hat{p}_j=y_j/n_j</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">p</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord">/</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> is the success rate for putts taken at distance <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">x_j</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>.</p>
 <p>We can see a pretty clear trend – the greater the distance from the hole, the lower the probability of the ball going in.</p>
 <h2 id="models"><a href="#models" class="header-anchor">Models</a></h2>
 <p>It&#39;s typically a good idea to start with a very simple model, and then slowly add in more features to improve the fit of our models. This is exactly what is done in the Stan documentation. One of the simplest models we can use in this instance is a logistic regression.</p>
@@ -125,155 +135,155 @@ scatter&#40;x,y ./ n, yerror &#61; yerror,
 </blockquote>
 <h3 id="logistic_regression"><a href="#logistic_regression" class="header-anchor">Logistic regression</a></h3>
 <p>The first model considers the probability of success &#40;i.e. getting the ball in the hole&#41; as a function of distance from the hole, using a logistic regression:</p>
-\[ y_j \sim \text{Binomial}(n_j, \text{logit}^{-1}(a + bx_j)), \hspace{1em}\text{for j = 1,\dots, J.} \]
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>y</mi><mi>j</mi></msub><mo>∼</mo><mtext>Binomial</mtext><mo stretchy="false">(</mo><msub><mi>n</mi><mi>j</mi></msub><mo separator="true">,</mo><msup><mtext>logit</mtext><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo stretchy="false">(</mo><mi>a</mi><mo>+</mo><mi>b</mi><msub><mi>x</mi><mi>j</mi></msub><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo separator="true">,</mo><mspace width="1em"/><mrow><mtext>for j = 1,</mtext><mo>…</mo><mtext>, J.</mtext></mrow></mrow><annotation encoding="application/x-tex"> y_j \sim \text{Binomial}(n_j, \text{logit}^{-1}(a + bx_j)), \hspace{1em}\text{for j = 1,\dots, J.} </annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∼</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.1846em;vertical-align:-0.2861em;"></span><span class="mord text"><span class="mord">Binomial</span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord text"><span class="mord">logit</span></span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8984em;"><span style="top:-3.1473em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">b</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">))</span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">for j = 1,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">, J.</span></span></span></span></span></span>
 <p>In Turing, this looks like</p>
-<pre><code class="language-julia">@model function golf_logistic&#40;x, y, n&#41;
-    a ~ Normal&#40;0,1&#41;
-    b ~ Normal&#40;0,1&#41;
+<pre><code class="julia hljs"><span class="hljs-meta">@model</span> <span class="hljs-keyword">function</span> golf_logistic(x, y, n)
+    a ~ Normal(<span class="hljs-number">0</span>,<span class="hljs-number">1</span>)
+    b ~ Normal(<span class="hljs-number">0</span>,<span class="hljs-number">1</span>)
 
-    p &#61; logistic.&#40;a .&#43; b .* x&#41;
-    for i in 1:length&#40;n&#41;
-        y&#91;i&#93; ~ Binomial&#40;n&#91;i&#93;,p&#91;i&#93;&#41;
-    end
-end</code></pre>
-<pre><code class="plaintext code-output">golf_logistic (generic function with 2 methods)</code></pre>
+    p = logistic.(a .+ b .* x)
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:length(n)
+        y[i] ~ Binomial(n[i],p[i])
+    <span class="hljs-keyword">end</span>
+<span class="hljs-keyword">end</span></code></pre>
+<pre><code class="plaintext hljs">golf_logistic (generic function with 2 methods)</code></pre>
 <h4 id="fitting_the_model"><a href="#fitting_the_model" class="header-anchor">Fitting the model</a></h4>
 <p>We can fit this model with the No-U-Turn sampler &#40;NUTS&#41; using Turing&#39;s <code>sample</code> function.</p>
-<pre><code class="language-julia">logistic_model &#61; golf_logistic&#40;x,y,n&#41;
-fit_logistic &#61; sample&#40;logistic_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
-<pre><code class="plaintext code-output">Chains MCMC chain (2000×14×4 Array{Float64, 3}):
+<pre><code class="julia hljs">logistic_model = golf_logistic(x,y,n)
+fit_logistic = sample(logistic_model,NUTS(),MCMCThreads(),<span class="hljs-number">2000</span>,<span class="hljs-number">4</span>)</code></pre>
+<pre><code class="plaintext hljs">Chains MCMC chain (2000×14×4 Array{Float64, 3}):
 
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 1.16 seconds
-Compute duration  = 1.1 seconds
+Wall duration     = 1.3 seconds
+Compute duration  = 1.25 seconds
 parameters        = a, b
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
 Summary Statistics
-  parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
-      Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
+  parameters      mean       std      mcse    ess_bulk    ess_tail      rhat   ess_per_sec
+      Symbol   Float64   Float64   Float64     Float64     Float64   Float64       Float64
 
-           a    2.2245    0.0584     0.0007    0.0013   1992.5274    1.0009     1808.1011
-           b   -0.2550    0.0068     0.0001    0.0001   2137.2680    1.0012     1939.4447
+           a    2.2259    0.0598    0.0014   1843.7256   2441.0340    1.0021     1476.1614
+           b   -0.2552    0.0069    0.0002   1888.7003   2371.6684    1.0022     1512.1700
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
       Symbol   Float64   Float64   Float64   Float64   Float64
 
-           a    2.1095    2.1859    2.2239    2.2635    2.3380
-           b   -0.2683   -0.2595   -0.2550   -0.2504   -0.2424
+           a    2.1083    2.1852    2.2254    2.2665    2.3440
+           b   -0.2687   -0.2599   -0.2551   -0.2505   -0.2420
 </code></pre>
-<p>Here we&#39;ve computed 8000 posterior samples across 4 chains. The MCSE of the mean is 0 to two decimal places for both parameters, and both \(\hat{R}\) values are close to 1, indicating convergence and good mixing between chains. So let&#39;s have a look at the fit.</p>
+<p>Here we&#39;ve computed 8000 posterior samples across 4 chains. The MCSE of the mean is 0 to two decimal places for both parameters, and both <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>R</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{R}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9468em;"></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.00773em;">R</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span> values are close to 1, indicating convergence and good mixing between chains. So let&#39;s have a look at the fit.</p>
 <h4 id="visualising_the_fit"><a href="#visualising_the_fit" class="header-anchor">Visualising the fit</a></h4>
 <p>The following plot shows the model fit. The black line corresponds to the posterior median, and the grey lines show 500 draws from the posterior distribution.</p>
-<pre><code class="language-julia"># get posterior median
-meda, medb &#61; &#91;quantile&#40;Array&#40;fit_logistic&#41;&#91;:,i&#93;,0.5&#41; for i in 1:2&#93;
+<pre><code class="julia hljs"><span class="hljs-comment"># get posterior median</span>
+meda, medb = [quantile(<span class="hljs-built_in">Array</span>(fit_logistic)[:,i],<span class="hljs-number">0.5</span>) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:<span class="hljs-number">2</span>]
 
-# select some posterior samples at random
-n_samples &#61; 500
-fit_samples &#61; Array&#40;fit_logistic&#41;
-idxs &#61; sample&#40;axes&#40;fit_samples,1&#41;,n_samples&#41;
-posterior_draws &#61; fit_samples&#91;idxs,:&#93;
+<span class="hljs-comment"># select some posterior samples at random</span>
+n_samples = <span class="hljs-number">500</span>
+fit_samples = <span class="hljs-built_in">Array</span>(fit_logistic)
+idxs = sample(axes(fit_samples,<span class="hljs-number">1</span>),n_samples)
+posterior_draws = fit_samples[idxs,:]
 
-posterior_data &#61; &#91;logistic.&#40;posterior_draws&#91;i,1&#93; .&#43; posterior_draws&#91;i,2&#93;.*x&#41; for i in 1:n_samples&#93;
-plot&#40;x,posterior_data,color&#61;:grey,alpha&#61;0.08,legend&#61;:false&#41;
+posterior_data = [logistic.(posterior_draws[i,<span class="hljs-number">1</span>] .+ posterior_draws[i,<span class="hljs-number">2</span>].*x) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:n_samples]
+plot(x,posterior_data,color=:grey,alpha=<span class="hljs-number">0.08</span>,legend=:<span class="hljs-literal">false</span>)
 
-plot&#33;&#40;x,logistic.&#40;meda .&#43; medb.*x&#41;,color&#61;:black,linewidth&#61;2&#41;
-scatter&#33;&#40;x,y ./ n, yerror &#61; yerror,
-        ylabel &#61; &quot;Probability of success&quot;,
-        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
-        title &#61; &quot;Fitted logistic regression&quot;,
-        legend&#61;:false,
-        color&#61;:lightblue&#41;</code></pre>
+plot!(x,logistic.(meda .+ medb.*x),color=:black,linewidth=<span class="hljs-number">2</span>)
+scatter!(x,y ./ n, yerror = yerror,
+        ylabel = <span class="hljs-string">&quot;Probability of success&quot;</span>,
+        xlabel = <span class="hljs-string">&quot;Distance from hole (feet)&quot;</span>,
+        title = <span class="hljs-string">&quot;Fitted logistic regression&quot;</span>,
+        legend=:<span class="hljs-literal">false</span>,
+        color=:lightblue)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/output/logistic_plot.svg" alt="">
 <p>A <em>by-eye</em> evaluation leads us to conclude this isn&#39;t a very good fit. Can we formalise this conclusion with some more rigorous tools?</p>
 <h4 id="evaluating_the_fit_using_elpd"><a href="#evaluating_the_fit_using_elpd" class="header-anchor">Evaluating the fit using ELPD</a></h4>
-<p>The expected log pointwise predictive density &#40;ELPD&#41; is a measure of predictive accuracy for each of the \(J\) data points taken one at a time<sup id="fnref:elpd"><a href="#fndef:elpd" class="fnref">[2]</a></sup>. It can&#39;t be computed directly, but we can estimate it with leave-one-out &#40;LOO&#41; cross-validation. The LOO estimate of the ELPD can be noisy under certain conditions, but can be improved with Pareto smoothed importance sampling. This is the estimate implemented in ArviZ. In order to use the tools in ArviZ we first have to compute the posterior predictive distribution, save the pointwise log likelihoods from our model fit, and convert our Turing chains into an ArviZ <code>InferenceData</code> object.</p>
+<p>The expected log pointwise predictive density &#40;ELPD&#41; is a measure of predictive accuracy for each of the <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>J</mi></mrow><annotation encoding="application/x-tex">J</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.09618em;">J</span></span></span></span> data points taken one at a time<sup id="fnref:elpd"><a href="#fndef:elpd" class="fnref">[2]</a></sup>. It can&#39;t be computed directly, but we can estimate it with leave-one-out &#40;LOO&#41; cross-validation. The LOO estimate of the ELPD can be noisy under certain conditions, but can be improved with Pareto smoothed importance sampling. This is the estimate implemented in ArviZ. In order to use the tools in ArviZ we first have to compute the posterior predictive distribution, save the pointwise log likelihoods from our model fit, and convert our Turing chains into an ArviZ <code>InferenceData</code> object.</p>
 <blockquote>
 <p>📝 For our predictive posterior we replace the data <code>y</code> with a vector of <code>missing</code> values, <code>similar&#40;y, Missing&#41;</code>.</p>
 </blockquote>
-<pre><code class="language-julia"># Instantiate the predictive model
-logistic_predict &#61; golf_logistic&#40;x,similar&#40;y, Missing&#41;,n&#41;
-posterior_predictive &#61; predict&#40;logistic_predict, fit_logistic&#41;
+<pre><code class="julia hljs"><span class="hljs-comment"># Instantiate the predictive model</span>
+logistic_predict = golf_logistic(x,similar(y, <span class="hljs-built_in">Missing</span>),n)
+posterior_predictive = predict(logistic_predict, fit_logistic)
 
 
-# Ensure the ordering of the loglikelihoods matches the ordering of &#96;posterior_predictive&#96;
-loglikelihoods &#61; pointwise_loglikelihoods&#40;logistic_model, fit_logistic&#41;
-names &#61; string.&#40;keys&#40;posterior_predictive&#41;&#41;
-loglikelihoods_vals &#61; getindex.&#40;Ref&#40;loglikelihoods&#41;, names&#41;
+<span class="hljs-comment"># Ensure the ordering of the loglikelihoods matches the ordering of `posterior_predictive`</span>
+loglikelihoods = pointwise_loglikelihoods(logistic_model, fit_logistic)
+names = string.(keys(posterior_predictive))
+loglikelihoods_vals = getindex.(<span class="hljs-built_in">Ref</span>(loglikelihoods), names)
 
-# Reshape into &#96;&#40;nchains, nsamples, size&#40;y&#41;...&#41;&#96;
-loglikelihoods_arr &#61; permutedims&#40;cat&#40;loglikelihoods_vals...; dims&#61;3&#41;, &#40;2, 1, 3&#41;&#41;;
+<span class="hljs-comment"># Reshape into `(nchains, nsamples, size(y)...)`</span>
+loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=<span class="hljs-number">3</span>), (<span class="hljs-number">2</span>, <span class="hljs-number">1</span>, <span class="hljs-number">3</span>));
 
-# construct idata object
-idata_logistic &#61; from_mcmcchains&#40;
+<span class="hljs-comment"># construct idata object</span>
+idata_logistic = from_mcmcchains(
     fit_logistic;
-    posterior_predictive&#61;posterior_predictive,
-    log_likelihood&#61;Dict&#40;&quot;ll&quot; &#61;&gt; loglikelihoods_arr&#41;,
-    library&#61;&quot;Turing&quot;,
-    observed_data&#61;&#40;; x, n, y&#41;
-&#41;;</code></pre>
+    posterior_predictive=posterior_predictive,
+    log_likelihood=<span class="hljs-built_in">Dict</span>(<span class="hljs-string">&quot;ll&quot;</span> =&gt; loglikelihoods_arr),
+    library=<span class="hljs-string">&quot;Turing&quot;</span>,
+    observed_data=(; x, n, y)
+);</code></pre>
 <p>With this <code>InferenceData</code> object we can utilise some powerful analysis and visualisation tools in ArviZ.</p>
 <p>For example, we can now easily estimate the ELPD with PSIS-LOO.</p>
-<pre><code class="language-julia">logistic_loo &#61; loo&#40;idata_logistic,pointwise&#61;true&#41;;
-println&#40;&quot;LOO estimate is &quot;,round&#40;logistic_loo.elpd_loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;logistic_loo.se&#91;1&#93;,digits&#61;2&#41;,
-        &quot; and an estimated number of parameters of &quot;,round&#40;logistic_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO estimate is -206.71 with an SE of 64.21 and an estimated number of parameters of 43.42
+<pre><code class="julia hljs">logistic_loo = loo(idata_logistic,pointwise=<span class="hljs-literal">true</span>);
+println(<span class="hljs-string">&quot;LOO estimate is &quot;</span>,round(logistic_loo.elpd_loo[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>), <span class="hljs-string">&quot; with an SE of &quot;</span>,round(logistic_loo.se[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>),
+        <span class="hljs-string">&quot; and an estimated number of parameters of &quot;</span>,round(logistic_loo.p_loo[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>))</code></pre>
+<pre><code class="plaintext hljs">LOO estimate is -207.04 with an SE of 64.45 and an estimated number of parameters of 42.09
 </code></pre>
 <p>The estimate itself is relative, so it isn&#39;t very useful in isolation, but we can see that the standard error is high, and the estimated number of parameters in the model is ~40, much larger than the true value of 1, indicating severe model misspecification.</p>
 <p>Another tool at our disposal is the PSIS-LOO probability integral transform. Oriol Abril has written a nice blog post on how to interpret the following plots<sup id="fnref:loopit"><a href="#fndef:loopit" class="fnref">[3]</a></sup>, and I&#39;ll quote directly from the post to give some intuition about this:</p>
 <blockquote>
-<p>Probability Integral Transform stands for the fact that given a random variable \(X\), <strong>the random variable \(Y = F_X(X) = P(x\leq X)\) is a uniform random variable if the transformation \(F_X\) is the Cumulative Density Function</strong> &#40;CDF&#41; of the original random variable \(X\). If instead of \(F_X\) we have \(n\) samples from \(X\), \(\{x_1,\dots, x_n\}\), we can use them to estimate \(\hat{F}_X\) and apply it to future \(X\) samples \(x^*\). In this case, \(\hat{F}_X(x^∗)\) will be approximately a uniform random variable, converging to an exact uniform variable as \(n\) tends to infinity.</p>
+<p>Probability Integral Transform stands for the fact that given a random variable <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi></mrow><annotation encoding="application/x-tex">X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span></span></span></span>, <strong>the random variable <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><msub><mi>F</mi><mi>X</mi></msub><mo stretchy="false">(</mo><mi>X</mi><mo stretchy="false">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false">(</mo><mi>x</mi><mo>≤</mo><mi>X</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Y = F_X(X) = P(x\leq X)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="mclose">)</span></span></span></span> is a uniform random variable if the transformation <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>F</mi><mi>X</mi></msub></mrow><annotation encoding="application/x-tex">F_X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> is the Cumulative Density Function</strong> &#40;CDF&#41; of the original random variable <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi></mrow><annotation encoding="application/x-tex">X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span></span></span></span>. If instead of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>F</mi><mi>X</mi></msub></mrow><annotation encoding="application/x-tex">F_X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> we have <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span> samples from <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi></mrow><annotation encoding="application/x-tex">X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span></span></span></span>, <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">{</mo><msub><mi>x</mi><mn>1</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>x</mi><mi>n</mi></msub><mo stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">\{x_1,\dots, x_n\}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">}</span></span></span></span>, we can use them to estimate <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover accent="true"><mi>F</mi><mo>^</mo></mover><mi>X</mi></msub></mrow><annotation encoding="application/x-tex">\hat{F}_X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0968em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">F</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> and apply it to future <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi></mrow><annotation encoding="application/x-tex">X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span></span></span></span> samples <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>x</mi><mo>∗</mo></msup></mrow><annotation encoding="application/x-tex">x^*</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6887em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6887em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mbin mtight">∗</span></span></span></span></span></span></span></span></span></span></span>. In this case, <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover accent="true"><mi>F</mi><mo>^</mo></mover><mi>X</mi></msub><mo stretchy="false">(</mo><msup><mi>x</mi><mo>∗</mo></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\hat{F}_X(x^∗)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.1968em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">F</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6887em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mbin mtight">∗</span></span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> will be approximately a uniform random variable, converging to an exact uniform variable as <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span> tends to infinity.</p>
 </blockquote>
-<p>So we&#39;re looking for our computed \(\hat{F}_X\) to be, more or less, a uniform random variable. Anything other than this suggests that the model is a poor fit.</p>
+<p>So we&#39;re looking for our computed <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover accent="true"><mi>F</mi><mo>^</mo></mover><mi>X</mi></msub></mrow><annotation encoding="application/x-tex">\hat{F}_X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0968em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">F</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> to be, more or less, a uniform random variable. Anything other than this suggests that the model is a poor fit.</p>
 <blockquote>
-<p>📝 This is not to say that if \(\hat{F}_X\) is uniform then our model is good. Doing a large number of varied diagnostic checks, e.g \(\hat{R}\), ESS &#40;bulk and tail&#41;, MCSE, and posterior predictive checks like PSIS-LOO, simply gives us more opportunity to identify any issues with our model.</p>
+<p>📝 This is not to say that if <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover accent="true"><mi>F</mi><mo>^</mo></mover><mi>X</mi></msub></mrow><annotation encoding="application/x-tex">\hat{F}_X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0968em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">F</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> is uniform then our model is good. Doing a large number of varied diagnostic checks, e.g <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>R</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{R}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9468em;"></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.00773em;">R</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span>, ESS &#40;bulk and tail&#41;, MCSE, and posterior predictive checks like PSIS-LOO, simply gives us more opportunity to identify any issues with our model.</p>
 </blockquote>
 <p>The LOO-PIT for our simple logistic regression model is clearly not uniform which suggests to us, as expected, the model is a poor choice.</p>
-<pre><code class="language-julia">plot_loo_pit&#40;idata_logistic; y&#61;&quot;y&quot;&#41;</code></pre>
+<pre><code class="julia hljs">plot_loo_pit(idata_logistic; y=<span class="hljs-string">&quot;y&quot;</span>)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/logistic_loo_pit.png" alt="">
 <p>Sometimes it&#39;s not very clear if the estimate is non-uniform, so we can plot the difference between the LOO-PIT Empirical Cumulative Distribution Function &#40;ECDF&#41; and the uniform CDF instead of LOO-PIT kde for a more &#39;zoomed in&#39; look.</p>
-<pre><code class="language-julia">plot_loo_pit&#40;idata_logistic; y&#61;&quot;y&quot;,ecdf&#61;true&#41;</code></pre>
+<pre><code class="julia hljs">plot_loo_pit(idata_logistic; y=<span class="hljs-string">&quot;y&quot;</span>,ecdf=<span class="hljs-literal">true</span>)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/logistic_loo_pit_ecdf.png" alt="">
-<p>Lastly, it&#39;s a good idea to plot our Pareto \(k\) diagnostic, to assess the reliability of the above estimates<sup id="fnref:psisdiag"><a href="#fndef:psisdiag" class="fnref">[4]</a></sup>. In short, we&#39;re looking for values of \(k < 0.7\). Any \(k\) values greater than 1 and we can&#39;t compute an estimate for the Monte Carlo standard error &#40;SE&#41; of the ELPD. In this case the ELPD estimate is not reliable. These high \(k\) values also explain the large estimate for the effective number of parameters.</p>
-<pre><code class="language-julia">plot_khat&#40;logistic_loo&#41;</code></pre>
+<p>Lastly, it&#39;s a good idea to plot our Pareto <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi></mrow><annotation encoding="application/x-tex">k</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span></span></span></span> diagnostic, to assess the reliability of the above estimates<sup id="fnref:psisdiag"><a href="#fndef:psisdiag" class="fnref">[4]</a></sup>. In short, we&#39;re looking for values of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mo>&lt;</mo><mn>0.7</mn></mrow><annotation encoding="application/x-tex">k &lt; 0.7</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7335em;vertical-align:-0.0391em;"></span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&lt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.7</span></span></span></span>. Any <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi></mrow><annotation encoding="application/x-tex">k</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span></span></span></span> values greater than 1 and we can&#39;t compute an estimate for the Monte Carlo standard error &#40;SE&#41; of the ELPD. In this case the ELPD estimate is not reliable. These high <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi></mrow><annotation encoding="application/x-tex">k</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span></span></span></span> values also explain the large estimate for the effective number of parameters.</p>
+<pre><code class="julia hljs">plot_khat(logistic_loo)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/logistic_khat.png" alt="">
 <h3 id="modelling_from_first_principles"><a href="#modelling_from_first_principles" class="header-anchor">Modelling from first principles</a></h3>
-<p>So hopefully we&#39;re pretty convinced by now that this isn&#39;t a good model. An alternative approach is to consider the angle of the shot, where 0 corresponds to the centre of the hole. We assume that the golfers attempt to hit the ball directly at the hole &#40;i.e. an angle of 0&#41;, but are not always perfect due to a number of &#40;known or unknown&#41; factors, so that the angle is Normally distributed about 0 with some standard deviation \(\sigma\). The model is derived in detail in the Stan documentation, so I will just show the Turing implementation.</p>
-<pre><code class="language-julia">Phi&#40;x&#41; &#61; cdf&#40;Normal&#40;&#41;,x&#41;
+<p>So hopefully we&#39;re pretty convinced by now that this isn&#39;t a good model. An alternative approach is to consider the angle of the shot, where 0 corresponds to the centre of the hole. We assume that the golfers attempt to hit the ball directly at the hole &#40;i.e. an angle of 0&#41;, but are not always perfect due to a number of &#40;known or unknown&#41; factors, so that the angle is Normally distributed about 0 with some standard deviation <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi></mrow><annotation encoding="application/x-tex">\sigma</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">σ</span></span></span></span>. The model is derived in detail in the Stan documentation, so I will just show the Turing implementation.</p>
+<pre><code class="julia hljs">Phi(x) = cdf(Normal(),x)
 
-@model function golf_angle&#40;x,y,n,r,R&#41;
-    threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
-    sigma ~ truncated&#40;Normal&#40;0,1&#41;,0,Inf&#41;
-    p &#61; 2 .* Phi.&#40;threshold_angle ./ sigma&#41; .- 1
-    for i in 1:length&#40;n&#41;
-        y&#91;i&#93; ~ Binomial&#40;n&#91;i&#93;,p&#91;i&#93;&#41;
-    end
-    return sigma*180/π # generated quantities
-end
+<span class="hljs-meta">@model</span> <span class="hljs-keyword">function</span> golf_angle(x,y,n,r,R)
+    threshold_angle = asin.((R-r) ./ x)
+    sigma ~ truncated(Normal(<span class="hljs-number">0</span>,<span class="hljs-number">1</span>),<span class="hljs-number">0</span>,<span class="hljs-literal">Inf</span>)
+    p = <span class="hljs-number">2</span> .* Phi.(threshold_angle ./ sigma) .- <span class="hljs-number">1</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:length(n)
+        y[i] ~ Binomial(n[i],p[i])
+    <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">return</span> sigma*<span class="hljs-number">180</span>/<span class="hljs-literal">π</span> <span class="hljs-comment"># generated quantities</span>
+<span class="hljs-keyword">end</span>
 
-r &#61; &#40;1.68 / 2&#41; / 12;
-R &#61; &#40;4.25 / 2&#41; / 12;
+r = (<span class="hljs-number">1.68</span> / <span class="hljs-number">2</span>) / <span class="hljs-number">12</span>;
+R = (<span class="hljs-number">4.25</span> / <span class="hljs-number">2</span>) / <span class="hljs-number">12</span>;
 
-angle_model &#61; golf_angle&#40;x,y,n,r,R&#41;
-fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
-<pre><code class="plaintext code-output">Chains MCMC chain (2000×13×4 Array{Float64, 3}):
+angle_model = golf_angle(x,y,n,r,R)
+fit_angle = sample(angle_model,NUTS(),MCMCThreads(),<span class="hljs-number">2000</span>,<span class="hljs-number">4</span>)</code></pre>
+<pre><code class="plaintext hljs">Chains MCMC chain (2000×13×4 Array{Float64, 3}):
 
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 4.78 seconds
-Compute duration  = 4.44 seconds
+Wall duration     = 6.22 seconds
+Compute duration  = 5.62 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
 Summary Statistics
-  parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
-      Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
+  parameters      mean       std      mcse    ess_bulk    ess_tail      rhat   ess_per_sec
+      Symbol   Float64   Float64   Float64     Float64     Float64   Float64       Float64
 
-       sigma    0.0267    0.0004     0.0000    0.0000   3386.2166    0.9997      761.9749
+       sigma    0.0266    0.0004    0.0000   4017.7321   6079.3199    1.0010      714.6446
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
@@ -282,88 +292,88 @@ Quantiles
        sigma    0.0259    0.0264    0.0267    0.0269    0.0274
 </code></pre>
 <p>The model is fit just as before, and if we visualise the fit against the posterior median of the previous model it seems to be a lot better.</p>
-<pre><code class="language-julia"># get posterior median
-med_sigma &#61; quantile&#40;Array&#40;fit_angle&#41;,0.5&#41;
+<pre><code class="julia hljs"><span class="hljs-comment"># get posterior median</span>
+med_sigma = quantile(<span class="hljs-built_in">Array</span>(fit_angle),<span class="hljs-number">0.5</span>)
 
-# select posterior samples at random
-n_samples &#61; 500
-fit_samples &#61; Array&#40;fit_angle&#41;
-idxs &#61; sample&#40;1:length&#40;fit_angle&#41;,n_samples&#41;
-posterior_draws &#61; fit_samples&#91;idxs&#93;
+<span class="hljs-comment"># select posterior samples at random</span>
+n_samples = <span class="hljs-number">500</span>
+fit_samples = <span class="hljs-built_in">Array</span>(fit_angle)
+idxs = sample(<span class="hljs-number">1</span>:length(fit_angle),n_samples)
+posterior_draws = fit_samples[idxs]
 
-threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
+threshold_angle = asin.((R-r) ./ x)
 
-post_lines &#61; &#91;2 .* Phi.&#40;threshold_angle ./ posterior_draws&#91;i&#93;&#41; .- 1 for i in 1:n_samples&#93;
-plot&#40;x,post_lines,color&#61;:grey,alpha&#61;0.08,legend&#61;:false&#41;
-plot&#33;&#40;x,2 .* cdf.&#40;Normal&#40;&#41;,threshold_angle ./ med_sigma&#41; .- 1,color&#61;:blue,linewidth&#61;1.5&#41;
+post_lines = [<span class="hljs-number">2</span> .* Phi.(threshold_angle ./ posterior_draws[i]) .- <span class="hljs-number">1</span> <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:n_samples]
+plot(x,post_lines,color=:grey,alpha=<span class="hljs-number">0.08</span>,legend=:<span class="hljs-literal">false</span>)
+plot!(x,<span class="hljs-number">2</span> .* cdf.(Normal(),threshold_angle ./ med_sigma) .- <span class="hljs-number">1</span>,color=:blue,linewidth=<span class="hljs-number">1.5</span>)
 
-plot&#33;&#40;x,logistic.&#40;meda .&#43; medb.*x&#41;,color&#61;:black,linewidth&#61;2&#41;
-annotate&#33;&#40;12,0.5,&quot;Logistic regression model&quot;,8&#41;
-annotate&#33;&#40;5,0.35,text&#40;&quot;Geometry based model&quot;,color&#61;:blue,8&#41;&#41;
-scatter&#33;&#40;x,y ./ n, yerror &#61; yerror,
-        ylabel &#61; &quot;Probability of success&quot;,
-        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
-        title &#61; &quot;Comparison of both models&quot;,
-        legend&#61;:false,
-        color&#61;:lightblue&#41;</code></pre>
+plot!(x,logistic.(meda .+ medb.*x),color=:black,linewidth=<span class="hljs-number">2</span>)
+annotate!(<span class="hljs-number">12</span>,<span class="hljs-number">0.5</span>,<span class="hljs-string">&quot;Logistic regression model&quot;</span>,<span class="hljs-number">8</span>)
+annotate!(<span class="hljs-number">5</span>,<span class="hljs-number">0.35</span>,text(<span class="hljs-string">&quot;Geometry based model&quot;</span>,color=:blue,<span class="hljs-number">8</span>))
+scatter!(x,y ./ n, yerror = yerror,
+        ylabel = <span class="hljs-string">&quot;Probability of success&quot;</span>,
+        xlabel = <span class="hljs-string">&quot;Distance from hole (feet)&quot;</span>,
+        title = <span class="hljs-string">&quot;Comparison of both models&quot;</span>,
+        legend=:<span class="hljs-literal">false</span>,
+        color=:lightblue)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/output/comparison_plot.svg" alt="">
 <h4 id="posterior_predictive_checks"><a href="#posterior_predictive_checks" class="header-anchor">Posterior predictive checks</a></h4>
 <p>Let&#39;s have a look at the same posterior predictive checks that we did for the previous model.</p>
-<pre><code class="language-julia"># Instantiate the predictive model
-angle_predict &#61; golf_angle&#40;x,similar&#40;y, Missing&#41;,n,r,R&#41;
-posterior_predictive &#61; predict&#40;angle_predict, fit_angle&#41;
+<pre><code class="julia hljs"><span class="hljs-comment"># Instantiate the predictive model</span>
+angle_predict = golf_angle(x,similar(y, <span class="hljs-built_in">Missing</span>),n,r,R)
+posterior_predictive = predict(angle_predict, fit_angle)
 
-# Ensure the ordering of the loglikelihoods matches the ordering of &#96;posterior_predictive&#96;
-loglikelihoods &#61; pointwise_loglikelihoods&#40;angle_model, fit_angle&#41;
-names &#61; string.&#40;keys&#40;posterior_predictive&#41;&#41;
-loglikelihoods_vals &#61; getindex.&#40;Ref&#40;loglikelihoods&#41;, names&#41;
-# Reshape into &#96;&#40;nchains, nsamples, size&#40;y&#41;...&#41;&#96;
-loglikelihoods_arr &#61; permutedims&#40;cat&#40;loglikelihoods_vals...; dims&#61;3&#41;, &#40;2, 1, 3&#41;&#41;;
+<span class="hljs-comment"># Ensure the ordering of the loglikelihoods matches the ordering of `posterior_predictive`</span>
+loglikelihoods = pointwise_loglikelihoods(angle_model, fit_angle)
+names = string.(keys(posterior_predictive))
+loglikelihoods_vals = getindex.(<span class="hljs-built_in">Ref</span>(loglikelihoods), names)
+<span class="hljs-comment"># Reshape into `(nchains, nsamples, size(y)...)`</span>
+loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=<span class="hljs-number">3</span>), (<span class="hljs-number">2</span>, <span class="hljs-number">1</span>, <span class="hljs-number">3</span>));
 
-idata_angle &#61; from_mcmcchains&#40;
+idata_angle = from_mcmcchains(
     fit_angle;
-    posterior_predictive&#61;posterior_predictive,
-    log_likelihood&#61;Dict&#40;&quot;ll&quot; &#61;&gt; loglikelihoods_arr&#41;,
-    library&#61;&quot;Turing&quot;,
-    observed_data&#61;&#40;;x, n, y&#41;
-&#41;;
+    posterior_predictive=posterior_predictive,
+    log_likelihood=<span class="hljs-built_in">Dict</span>(<span class="hljs-string">&quot;ll&quot;</span> =&gt; loglikelihoods_arr),
+    library=<span class="hljs-string">&quot;Turing&quot;</span>,
+    observed_data=(;x, n, y)
+);
 
-angle_loo &#61; loo&#40;idata_angle,pointwise&#61;true&#41;;
-println&#40;&quot;LOO is &quot;,round&#40;angle_loo.elpd_loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;angle_loo.se&#91;1&#93;,digits&#61;2&#41;,
-        &quot; and an estimated number of parameters of &quot;,round&#40;angle_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO is -88.9 with an SE of 12.68 and an estimated number of parameters of 7.94
+angle_loo = loo(idata_angle,pointwise=<span class="hljs-literal">true</span>);
+println(<span class="hljs-string">&quot;LOO is &quot;</span>,round(angle_loo.elpd_loo[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>), <span class="hljs-string">&quot; with an SE of &quot;</span>,round(angle_loo.se[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>),
+        <span class="hljs-string">&quot; and an estimated number of parameters of &quot;</span>,round(angle_loo.p_loo[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>))</code></pre>
+<pre><code class="plaintext hljs">LOO is -89.79 with an SE of 13.49 and an estimated number of parameters of 8.84
 </code></pre>
-<pre><code class="language-julia">plot_loo_pit&#40;idata_angle; y&#61;&quot;y&quot;&#41;</code></pre>
+<pre><code class="julia hljs">plot_loo_pit(idata_angle; y=<span class="hljs-string">&quot;y&quot;</span>)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit.png" alt="">
 <p>This looks pretty promising. Our LOO-PIT seems to be uniform. However, when we look at the ECDF plot we can see there&#39;s some difference between our estimate and the uniform CDF.</p>
-<pre><code class="language-julia">plot_loo_pit&#40;idata_angle; y&#61;&quot;y&quot;,ecdf&#61;true&#41;</code></pre>
+<pre><code class="julia hljs">plot_loo_pit(idata_angle; y=<span class="hljs-string">&quot;y&quot;</span>,ecdf=<span class="hljs-literal">true</span>)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit_ecdf.png" alt="">
-<p>We also have one problematic Pareto \(k\) value, rendering our estimate unreliable anyhow.</p>
-<pre><code class="language-julia">plot_khat&#40;logistic_loo&#41;</code></pre>
+<p>We also have one problematic Pareto <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi></mrow><annotation encoding="application/x-tex">k</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span></span></span></span> value, rendering our estimate unreliable anyhow.</p>
+<pre><code class="julia hljs">plot_khat(logistic_loo)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/angle_khat.png" alt="">
 <p>If this wasn&#39;t enough to convince you that the model isn&#39;t great, there is actually a lot more golf data available to us. Here I&#39;ll do something slightly different to the Stan documentation, and fit our model directly to this new data, to see how it performs.</p>
-<pre><code class="language-julia">data_new &#61; readdlm&#40;&quot;_assets/blog/golf-putting-in-turing/code/golf_data_new.txt&quot;&#41;
-x_new, n_new, y_new &#61; data_new&#91;:,1&#93;, data_new&#91;:,2&#93;, data_new&#91;:,3&#93;;
-y &#61; y_new./n_new
-yerror_new &#61; sqrt.&#40;y .* &#40;1 .-y&#41;./n_new&#41;;
+<pre><code class="julia hljs">data_new = readdlm(<span class="hljs-string">&quot;_assets/blog/golf-putting-in-turing/code/golf_data_new.txt&quot;</span>)
+x_new, n_new, y_new = data_new[:,<span class="hljs-number">1</span>], data_new[:,<span class="hljs-number">2</span>], data_new[:,<span class="hljs-number">3</span>];
+y = y_new./n_new
+yerror_new = sqrt.(y .* (<span class="hljs-number">1</span> .-y)./n_new);
 
-angle_model &#61; golf_angle&#40;x_new,y_new,n_new,r,R&#41;
-fit_angle &#61; sample&#40;angle_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
-<pre><code class="plaintext code-output">Chains MCMC chain (2000×13×4 Array{Float64, 3}):
+angle_model = golf_angle(x_new,y_new,n_new,r,R)
+fit_angle = sample(angle_model,NUTS(),MCMCThreads(),<span class="hljs-number">2000</span>,<span class="hljs-number">4</span>)</code></pre>
+<pre><code class="plaintext hljs">Chains MCMC chain (2000×13×4 Array{Float64, 3}):
 
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 0.84 seconds
-Compute duration  = 0.81 seconds
+Wall duration     = 1.14 seconds
+Compute duration  = 1.08 seconds
 parameters        = sigma
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
 Summary Statistics
-  parameters      mean       std   naive_se      mcse        ess      rhat   ess_per_sec
-      Symbol   Float64   Float64    Float64   Float64    Float64   Float64       Float64
+  parameters      mean       std      mcse   ess_bulk    ess_tail      rhat   ess_per_sec
+      Symbol   Float64   Float64   Float64    Float64     Float64   Float64       Float64
 
-       sigma    0.0473    0.0000     0.0000    0.0000   645.8944    1.0051      801.3578
+       sigma    0.0473    0.0000    0.0000   829.2212   1160.2249    1.0026      764.9642
 
 Quantiles
   parameters      2.5%     25.0%     50.0%     75.0%     97.5%
@@ -371,17 +381,17 @@ Quantiles
 
        sigma    0.0473    0.0473    0.0473    0.0473    0.0473
 </code></pre>
-<pre><code class="language-julia"># get posterior median
-med_sigma &#61; quantile&#40;Array&#40;fit_angle&#41;,0.5&#41;
+<pre><code class="julia hljs"><span class="hljs-comment"># get posterior median</span>
+med_sigma = quantile(<span class="hljs-built_in">Array</span>(fit_angle),<span class="hljs-number">0.5</span>)
 
-threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x_new&#41;
-plot&#40;x_new,2 .* cdf.&#40;Normal&#40;&#41;,threshold_angle ./ med_sigma&#41; .- 1,color&#61;:blue,linewidth&#61;1.5&#41;
-scatter&#33;&#40;x_new,y, yerror &#61; yerror_new,
-        ylabel &#61; &quot;Probability of success&quot;,
-        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
-        title &#61; &quot;New data, old model&quot;,
-        legend&#61;:false,
-        color&#61;:lightblue&#41;</code></pre>
+threshold_angle = asin.((R-r) ./ x_new)
+plot(x_new,<span class="hljs-number">2</span> .* cdf.(Normal(),threshold_angle ./ med_sigma) .- <span class="hljs-number">1</span>,color=:blue,linewidth=<span class="hljs-number">1.5</span>)
+scatter!(x_new,y, yerror = yerror_new,
+        ylabel = <span class="hljs-string">&quot;Probability of success&quot;</span>,
+        xlabel = <span class="hljs-string">&quot;Distance from hole (feet)&quot;</span>,
+        title = <span class="hljs-string">&quot;New data, old model&quot;</span>,
+        legend=:<span class="hljs-literal">false</span>,
+        color=:lightblue)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/output/new_data.svg" alt="">
 <p>And this really sends our posterior checks wild:</p>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/angle_loo_pit_new.png" alt="">
@@ -393,153 +403,153 @@ scatter&#33;&#40;x_new,y, yerror &#61; yerror_new,
 </blockquote>
 <h3 id="an_extended_model_that_accounts_for_how_hard_the_ball_is_hit"><a href="#an_extended_model_that_accounts_for_how_hard_the_ball_is_hit" class="header-anchor">An extended model that accounts for how hard the ball is hit</a></h3>
 <p>So we have an extra parameter now, <code>sigma_distance</code>, and additionally we make the assumption that the golfer aims to hit the ball 1 foot past the hole, with a distance tolerance of 3 feet &#40;seriously if you&#39;re lost, read the Stan docs&#41;.</p>
-<pre><code class="language-julia">@model function golf_angle_distance_2&#40;x,y,n,r,R,overshot,distance_tolerance&#41;
-    sigma_angle ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
-    sigma_distance ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
+<pre><code class="julia hljs"><span class="hljs-meta">@model</span> <span class="hljs-keyword">function</span> golf_angle_distance_2(x,y,n,r,R,overshot,distance_tolerance)
+    sigma_angle ~ truncated(Normal(),<span class="hljs-number">0</span>,<span class="hljs-literal">Inf</span>)
+    sigma_distance ~ truncated(Normal(),<span class="hljs-number">0</span>,<span class="hljs-literal">Inf</span>)
 
-    threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
+    threshold_angle = asin.((R-r) ./ x)
 
-    p_angle &#61; 2 .* Phi.&#40;threshold_angle ./ sigma_angle&#41; .- 1
-    p_distance &#61; Phi.&#40;&#40;distance_tolerance - overshot&#41; ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41; -
-        Phi.&#40;-overshot ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41;
-    p &#61; p_angle .* p_distance
+    p_angle = <span class="hljs-number">2</span> .* Phi.(threshold_angle ./ sigma_angle) .- <span class="hljs-number">1</span>
+    p_distance = Phi.((distance_tolerance - overshot) ./ ((x .+ overshot) .* sigma_distance)) -
+        Phi.(-overshot ./ ((x .+ overshot) .* sigma_distance))
+    p = p_angle .* p_distance
 
-    for i in 1:length&#40;n&#41;
-        y&#91;i&#93; ~ Binomial&#40;n&#91;i&#93;,p&#91;i&#93;&#41;
-    end
-    return sigma_angle*180/π
-end
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:length(n)
+        y[i] ~ Binomial(n[i],p[i])
+    <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">return</span> sigma_angle*<span class="hljs-number">180</span>/<span class="hljs-literal">π</span>
+<span class="hljs-keyword">end</span>
 
-overshot &#61; 1
-distance_tolerance &#61; 3
+overshot = <span class="hljs-number">1</span>
+distance_tolerance = <span class="hljs-number">3</span>
 
-angle_distance_2_model &#61; golf_angle_distance_2&#40;x_new, y_new, n_new, r, R, overshot, distance_tolerance&#41;
-fit_angle_distance_2 &#61; sample&#40;angle_distance_2_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
-<pre><code class="plaintext code-output">Chains MCMC chain (2000×14×4 Array{Float64, 3}):
+angle_distance_2_model = golf_angle_distance_2(x_new, y_new, n_new, r, R, overshot, distance_tolerance)
+fit_angle_distance_2 = sample(angle_distance_2_model,NUTS(),MCMCThreads(),<span class="hljs-number">2000</span>,<span class="hljs-number">4</span>)</code></pre>
+<pre><code class="plaintext hljs">Chains MCMC chain (2000×14×4 Array{Float64, 3}):
 
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 55.75 seconds
-Compute duration  = 55.7 seconds
+Wall duration     = 65.64 seconds
+Compute duration  = 65.6 seconds
 parameters        = sigma_angle, sigma_distance
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
 Summary Statistics
-      parameters      mean       std   naive_se      mcse       ess       rhat   ess_per_sec
-          Symbol   Float64   Float64    Float64   Float64   Float64    Float64       Float64
+      parameters      mean       std      mcse   ess_bulk   ess_tail      rhat   ess_per_sec
+          Symbol   Float64   Float64   Float64    Float64    Float64   Float64       Float64
 
-     sigma_angle    0.0390    0.0149     0.0002    0.0016   16.0321   545.4561        0.2878
-  sigma_distance    0.0725    0.0386     0.0004    0.0041   16.0327   158.3152        0.2878
+     sigma_angle    0.0388    0.0147    0.0037    28.2017   111.3179    1.5318        0.4299
+  sigma_distance    0.0790    0.0400    0.0100    17.3934    23.5459    3.2589        0.2651
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
-     sigma_angle    0.0132    0.0389    0.0473    0.0475    0.0481
-  sigma_distance    0.0352    0.0518    0.0588    0.0791    0.1379
+     sigma_angle    0.0132    0.0389    0.0473    0.0473    0.0473
+  sigma_distance    0.0356    0.0455    0.0715    0.1045    0.1379
 </code></pre>
 <h4 id="a_bad_fit"><a href="#a_bad_fit" class="header-anchor">A bad fit</a></h4>
-<p>Now before we go jumping into our posterior predictive checks to try and confirm that our idea was as brilliant as we thought it was, let&#39;s take a quick look at the diagnostics provided by Turing. The ESS is very low and the \(\hat{R}\) values for both parameters are much larger than 1, indicated poor mixing. We can plot the chains to see if we can see anything obvious.</p>
-<pre><code class="language-julia">plot&#40;fit_angle_distance_2&#41;</code></pre>
+<p>Now before we go jumping into our posterior predictive checks to try and confirm that our idea was as brilliant as we thought it was, let&#39;s take a quick look at the diagnostics provided by Turing. The ESS is very low and the <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>R</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{R}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9468em;"></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.9468em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.00773em;">R</span></span><span style="top:-3.2523em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span> values for both parameters are much larger than 1, indicated poor mixing. We can plot the chains to see if we can see anything obvious.</p>
+<pre><code class="julia hljs">plot(fit_angle_distance_2)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/output/chain_plot.svg" alt="">
-<p>The chains are definitely not mixing, and it looks like they are getting stuck in some really tight local minima. The issue is with the Binomial error model, it tries too hard to fit the first few points &#40;due to the \(n_j\) being large&#41; and this causes the rest of the fit to be off.</p>
+<p>The chains are definitely not mixing, and it looks like they are getting stuck in some really tight local minima. The issue is with the Binomial error model, it tries too hard to fit the first few points &#40;due to the <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">n_j</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> being large&#41; and this causes the rest of the fit to be off.</p>
 <blockquote>
 <p>📝 Again, this illustrates that we don&#39;t always need posterior predictive checks to tell us if something is wrong. In fact, if the problem is obvious, as is the case here, we don&#39;t really need to go through all the effort of setting up the checks.</p>
 </blockquote>
 <h4 id="a_good_fit"><a href="#a_good_fit" class="header-anchor">A good fit</a></h4>
 <p>The solution given is to approximate the Binomial data distribution with a Normal and then add independent variance. This forces &#40;helps?&#41; the model to not fit <em>so</em> well to certain data points to the detriment of others, improving the <em>overall</em> fit.</p>
-<pre><code class="language-julia">@model function golf_angle_distance_3&#40;x,y,n,r,R,overshot,distance_tolerance&#41;
-    sigma_angle ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
-    sigma_distance ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;    
-    sigma_y ~ truncated&#40;Normal&#40;&#41;,0,Inf&#41;
+<pre><code class="julia hljs"><span class="hljs-meta">@model</span> <span class="hljs-keyword">function</span> golf_angle_distance_3(x,y,n,r,R,overshot,distance_tolerance)
+    sigma_angle ~ truncated(Normal(),<span class="hljs-number">0</span>,<span class="hljs-literal">Inf</span>)
+    sigma_distance ~ truncated(Normal(),<span class="hljs-number">0</span>,<span class="hljs-literal">Inf</span>)    
+    sigma_y ~ truncated(Normal(),<span class="hljs-number">0</span>,<span class="hljs-literal">Inf</span>)
 
-    threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x&#41;
-    p_angle &#61; 2 .* Phi.&#40;threshold_angle ./ sigma_angle&#41; .- 1
-    p_distance &#61; Phi.&#40;&#40;distance_tolerance - overshot&#41; ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41; -
-        Phi.&#40;-overshot ./ &#40;&#40;x .&#43; overshot&#41; .* sigma_distance&#41;&#41;
-    p &#61; p_angle .* p_distance
+    threshold_angle = asin.((R-r) ./ x)
+    p_angle = <span class="hljs-number">2</span> .* Phi.(threshold_angle ./ sigma_angle) .- <span class="hljs-number">1</span>
+    p_distance = Phi.((distance_tolerance - overshot) ./ ((x .+ overshot) .* sigma_distance)) -
+        Phi.(-overshot ./ ((x .+ overshot) .* sigma_distance))
+    p = p_angle .* p_distance
 
-    for i in 1:length&#40;n&#41;
-        y&#91;i&#93; ~ Normal&#40;p&#91;i&#93;, sqrt&#40;p&#91;i&#93; * &#40;1 - p&#91;i&#93;&#41; / n&#91;i&#93; &#43; sigma_y^2&#41;&#41;;
-    end
-    return sigma_angle*180/π
-end
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:length(n)
+        y[i] ~ Normal(p[i], sqrt(p[i] * (<span class="hljs-number">1</span> - p[i]) / n[i] + sigma_y^<span class="hljs-number">2</span>));
+    <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">return</span> sigma_angle*<span class="hljs-number">180</span>/<span class="hljs-literal">π</span>
+<span class="hljs-keyword">end</span>
 
-angle_distance_3_model &#61; golf_angle_distance_3&#40;x_new,y,n_new,r,R,overshot,distance_tolerance&#41;
-fit_angle_distance_3 &#61; sample&#40;angle_distance_3_model,NUTS&#40;&#41;,MCMCThreads&#40;&#41;,2000,4&#41;</code></pre>
-<pre><code class="plaintext code-output">Chains MCMC chain (2000×15×4 Array{Float64, 3}):
+angle_distance_3_model = golf_angle_distance_3(x_new,y,n_new,r,R,overshot,distance_tolerance)
+fit_angle_distance_3 = sample(angle_distance_3_model,NUTS(),MCMCThreads(),<span class="hljs-number">2000</span>,<span class="hljs-number">4</span>)</code></pre>
+<pre><code class="plaintext hljs">Chains MCMC chain (2000×15×4 Array{Float64, 3}):
 
 Iterations        = 1001:1:3000
 Number of chains  = 4
 Samples per chain = 2000
-Wall duration     = 2.73 seconds
-Compute duration  = 2.68 seconds
+Wall duration     = 3.63 seconds
+Compute duration  = 3.59 seconds
 parameters        = sigma_angle, sigma_distance, sigma_y
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
 Summary Statistics
-      parameters      mean       std   naive_se      mcse         ess      rhat   ess_per_sec
-          Symbol   Float64   Float64    Float64   Float64     Float64   Float64       Float64
+      parameters      mean       std      mcse    ess_bulk    ess_tail      rhat   ess_per_sec
+          Symbol   Float64   Float64   Float64     Float64     Float64   Float64       Float64
 
-     sigma_angle    0.0178    0.0001     0.0000    0.0000   3716.8514    1.0006     1389.4771
-  sigma_distance    0.0800    0.0013     0.0000    0.0000   3683.4613    1.0003     1376.9949
-         sigma_y    0.0031    0.0006     0.0000    0.0000   4106.0757    1.0012     1534.9816
+     sigma_angle    0.0178    0.0001    0.0000   4053.7801   4072.7504    1.0007     1130.4462
+  sigma_distance    0.0801    0.0013    0.0000   4171.3948   4137.4452    1.0007     1163.2445
+         sigma_y    0.0031    0.0006    0.0000   4552.5817   3736.8904    1.0004     1269.5431
 
 Quantiles
       parameters      2.5%     25.0%     50.0%     75.0%     97.5%
           Symbol   Float64   Float64   Float64   Float64   Float64
 
      sigma_angle    0.0176    0.0177    0.0178    0.0179    0.0180
-  sigma_distance    0.0775    0.0792    0.0800    0.0809    0.0826
-         sigma_y    0.0021    0.0027    0.0030    0.0034    0.0044
+  sigma_distance    0.0775    0.0792    0.0801    0.0809    0.0826
+         sigma_y    0.0021    0.0026    0.0030    0.0034    0.0044
 </code></pre>
-<pre><code class="language-julia"># get posterior median
-med_sigma_angle, med_sigma_distance, _ &#61; &#91;quantile&#40;Array&#40;fit_angle_distance_3&#41;&#91;:,i&#93;,0.5&#41; for i in 1:3&#93;
+<pre><code class="julia hljs"><span class="hljs-comment"># get posterior median</span>
+med_sigma_angle, med_sigma_distance, _ = [quantile(<span class="hljs-built_in">Array</span>(fit_angle_distance_3)[:,i],<span class="hljs-number">0.5</span>) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:<span class="hljs-number">3</span>]
 
-threshold_angle &#61; asin.&#40;&#40;R-r&#41; ./ x_new&#41;
+threshold_angle = asin.((R-r) ./ x_new)
 
-p_angle &#61; 2 .* Phi.&#40;threshold_angle ./ med_sigma_angle&#41; .- 1
-p_distance &#61; Phi.&#40;&#40;distance_tolerance - overshot&#41; ./ &#40;&#40;x_new .&#43; overshot&#41; .* med_sigma_distance&#41;&#41; -
-    Phi.&#40;-overshot ./ &#40;&#40;x_new .&#43; overshot&#41; .* med_sigma_distance&#41;&#41;
-post_line &#61; p_angle .* p_distance
+p_angle = <span class="hljs-number">2</span> .* Phi.(threshold_angle ./ med_sigma_angle) .- <span class="hljs-number">1</span>
+p_distance = Phi.((distance_tolerance - overshot) ./ ((x_new .+ overshot) .* med_sigma_distance)) -
+    Phi.(-overshot ./ ((x_new .+ overshot) .* med_sigma_distance))
+post_line = p_angle .* p_distance
 
-plot&#40;x_new,post_line,color&#61;:blue,legend&#61;:false&#41;
+plot(x_new,post_line,color=:blue,legend=:<span class="hljs-literal">false</span>)
 
-scatter&#33;&#40;x_new,y, yerror &#61; yerror_new,
-        ylabel &#61; &quot;Probability of success&quot;,
-        xlabel &#61; &quot;Distance from hole &#40;feet&#41;&quot;,
-        title &#61; &quot;Angle and distance model &#40;good fit&#41;&quot;,
-        legend&#61;:false,
-        color&#61;:blue&#41;</code></pre>
+scatter!(x_new,y, yerror = yerror_new,
+        ylabel = <span class="hljs-string">&quot;Probability of success&quot;</span>,
+        xlabel = <span class="hljs-string">&quot;Distance from hole (feet)&quot;</span>,
+        title = <span class="hljs-string">&quot;Angle and distance model (good fit)&quot;</span>,
+        legend=:<span class="hljs-literal">false</span>,
+        color=:blue)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/output/good_fit.svg" alt="">
 <p>So far so good. The moment of truth:</p>
-<pre><code class="language-julia"># Instantiate the predictive model
-angle_distance_3_predict &#61; golf_angle_distance_3&#40;x_new,similar&#40;y, Missing&#41;,n_new,r,R,overshot,distance_tolerance&#41;
-posterior_predictive &#61; predict&#40;angle_distance_3_predict, fit_angle_distance_3&#41;
+<pre><code class="julia hljs"><span class="hljs-comment"># Instantiate the predictive model</span>
+angle_distance_3_predict = golf_angle_distance_3(x_new,similar(y, <span class="hljs-built_in">Missing</span>),n_new,r,R,overshot,distance_tolerance)
+posterior_predictive = predict(angle_distance_3_predict, fit_angle_distance_3)
 
-# Ensure the ordering of the loglikelihoods matches the ordering of &#96;posterior_predictive&#96;
-loglikelihoods &#61; pointwise_loglikelihoods&#40;angle_distance_3_model, fit_angle_distance_3&#41;
-names &#61; string.&#40;keys&#40;posterior_predictive&#41;&#41;
-loglikelihoods_vals &#61; getindex.&#40;Ref&#40;loglikelihoods&#41;, names&#41;
-# Reshape into &#96;&#40;nchains, nsamples, size&#40;y&#41;...&#41;&#96;
-loglikelihoods_arr &#61; permutedims&#40;cat&#40;loglikelihoods_vals...; dims&#61;3&#41;, &#40;2, 1, 3&#41;&#41;;
+<span class="hljs-comment"># Ensure the ordering of the loglikelihoods matches the ordering of `posterior_predictive`</span>
+loglikelihoods = pointwise_loglikelihoods(angle_distance_3_model, fit_angle_distance_3)
+names = string.(keys(posterior_predictive))
+loglikelihoods_vals = getindex.(<span class="hljs-built_in">Ref</span>(loglikelihoods), names)
+<span class="hljs-comment"># Reshape into `(nchains, nsamples, size(y)...)`</span>
+loglikelihoods_arr = permutedims(cat(loglikelihoods_vals...; dims=<span class="hljs-number">3</span>), (<span class="hljs-number">2</span>, <span class="hljs-number">1</span>, <span class="hljs-number">3</span>));
 
-idata_distance &#61; from_mcmcchains&#40;
+idata_distance = from_mcmcchains(
     fit_angle_distance_3;
-    posterior_predictive&#61;posterior_predictive,
-    log_likelihood&#61;Dict&#40;&quot;ll&quot; &#61;&gt; loglikelihoods_arr&#41;,
-    library&#61;&quot;Turing&quot;,
-    observed_data&#61;&#40;; y&#41;
-&#41;;
-distance_loo &#61; loo&#40;idata_distance,pointwise&#61;true&#41;;
-println&#40;&quot;LOO is &quot;,round&#40;distance_loo.elpd_loo&#91;1&#93;,digits&#61;2&#41;, &quot; with an SE of &quot;,round&#40;distance_loo.se&#91;1&#93;,digits&#61;2&#41;,
-        &quot; and an estimated number of parameters of &quot;,round&#40;distance_loo.p_loo&#91;1&#93;,digits&#61;2&#41;&#41;</code></pre>
-<pre><code class="plaintext code-output">LOO is 127.51 with an SE of 4.89 and an estimated number of parameters of 4.87
+    posterior_predictive=posterior_predictive,
+    log_likelihood=<span class="hljs-built_in">Dict</span>(<span class="hljs-string">&quot;ll&quot;</span> =&gt; loglikelihoods_arr),
+    library=<span class="hljs-string">&quot;Turing&quot;</span>,
+    observed_data=(; y)
+);
+distance_loo = loo(idata_distance,pointwise=<span class="hljs-literal">true</span>);
+println(<span class="hljs-string">&quot;LOO is &quot;</span>,round(distance_loo.elpd_loo[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>), <span class="hljs-string">&quot; with an SE of &quot;</span>,round(distance_loo.se[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>),
+        <span class="hljs-string">&quot; and an estimated number of parameters of &quot;</span>,round(distance_loo.p_loo[<span class="hljs-number">1</span>],digits=<span class="hljs-number">2</span>))</code></pre>
+<pre><code class="plaintext hljs">LOO is 127.38 with an SE of 4.97 and an estimated number of parameters of 5.0
 </code></pre>
-<pre><code class="language-julia">plot_loo_pit&#40;idata_distance; y&#61;&quot;y&quot;&#41;
-plot_loo_pit&#40;idata_distance; y&#61;&quot;y&quot;,ecdf&#61;true&#41;
-plot_khat&#40;distance_loo&#41;</code></pre>
+<pre><code class="julia hljs">plot_loo_pit(idata_distance; y=<span class="hljs-string">&quot;y&quot;</span>)
+plot_loo_pit(idata_distance; y=<span class="hljs-string">&quot;y&quot;</span>,ecdf=<span class="hljs-literal">true</span>)
+plot_khat(distance_loo)</code></pre>
 <img src="/assets/blog/golf-putting-in-turing/code/../images/distance_loo_pit_new.png" alt="">
 <img src="/assets/blog/golf-putting-in-turing/code/../images/distance_loo_pit_ecdf_new.png" alt="">
 <img src="/assets/blog/golf-putting-in-turing/code/../images/distance_khat_new.png" alt="">
@@ -549,17 +559,17 @@ plot_khat&#40;distance_loo&#41;</code></pre>
 <p>📝 Some of our models were fit to different datasets – to do model comparison that actually makes sense, the different models have to be fit to the same data. I won&#39;t show the code for this but the models have been re-fit to the new data.</p>
 </blockquote>
 
-<pre><code class="language-julia">comparison_dict &#61; Dict&#40;&quot;logistic&quot; &#61;&gt; idata_logistic,
-                       &quot;angle&quot; &#61;&gt; idata_angle,
-                       &quot;angle_distance_3&quot; &#61;&gt; idata_distance&#41;
-compare&#40;comparison_dict&#41;</code></pre>
-<pre><code class="plaintext code-output">3×10 DataFrame
- Row │ name              rank   elpd_loo        p_loo        elpd_diff      weight       se           dse      warning  scale
-     │ String            Int64  Float64         Float64      Float64        Float64      Float64      Float64  Bool     String
-─────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   1 │ angle_distance_3      0     127.508         4.86746       0.0        1.0              4.89269      0.0     true  log
-   2 │ logistic              1  -72597.8        2934.25      72725.3        0.0          15957.4      15958.3     true  log
-   3 │ angle                 2      -1.90037e5     0.217214      1.90164e5  9.44265e-11  67980.4      67978.4     true  log</code></pre>
+<pre><code class="julia hljs">comparison_dict = <span class="hljs-built_in">Dict</span>(<span class="hljs-string">&quot;logistic&quot;</span> =&gt; idata_logistic,
+                       <span class="hljs-string">&quot;angle&quot;</span> =&gt; idata_angle,
+                       <span class="hljs-string">&quot;angle_distance_3&quot;</span> =&gt; idata_distance)
+compare(comparison_dict)</code></pre>
+<pre><code class="plaintext hljs">3×10 DataFrame
+ Row │ name              rank   elpd_loo        p_loo       elpd_diff  weight      se           dse      warning  scale
+     │ String            Int64  Float64         Float64     Float64    Float64     Float64      Float64  Bool     String
+─────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ angle_distance_3      0     127.379         4.99857        0.0  1.0             4.97308      0.0     true  log
+   2 │ logistic              1  -72505.3        2791.69       72632.7  2.3509e-13  15956.1      15957.0     true  log
+   3 │ angle                 2      -1.90037e5     0.15686   190164.0  0.0         67980.4      67978.4     true  log</code></pre>
 <h2 id="conclusion"><a href="#conclusion" class="header-anchor">Conclusion</a></h2>
 <p>If you&#39;ve been wanting to do posterior predictive checks with your models in Turing and didn&#39;t know where to start, hopefully you&#39;ve learnt something from this post and will be able to integrate these tools into your workflow.</p>
 <p>Thank you to all the hard work of the Turing and ArviZ developers, as well as everyone I&#39;ve referenced here, and thanks to <a href="https://jokroese.com/">Jo Kroese</a> for helping me with the CSS, so now the images are actually big enough to see.</p>
@@ -632,14 +642,14 @@ compare&#40;comparison_dict&#41;</code></pre>
     <script defer src="https://use.fontawesome.com/releases/v5.8.2/js/all.js" integrity="sha384-DJ25uNYET2XCl5ZF++U8eNxPWqcKohUUBUpKGlNLMchM7q4Wjg2CUpjHLaL8yYPH" crossorigin="anonymous"></script>
 
     
-        <script src="/libs/katex/katex.min.js"></script>
-<script src="/libs/katex/auto-render.min.js"></script>
-<script>renderMathInElement(document.body)</script>
+        
+
+
 
     
     
-        <script src="/libs/highlight/highlight.pack.js"></script>
-<script>hljs.initHighlightingOnLoad();hljs.configure({tabReplace: '    '});</script>
+        
+
 
     
   </body>

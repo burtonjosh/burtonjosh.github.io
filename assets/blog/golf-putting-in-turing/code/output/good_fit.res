@@ -1,1 +1,1 @@
-nothing
+"/home/runner/work/burtonjosh.github.io/burtonjosh.github.io/__site/assets/blog/golf-putting-in-turing/code/output/good_fit.svg"
