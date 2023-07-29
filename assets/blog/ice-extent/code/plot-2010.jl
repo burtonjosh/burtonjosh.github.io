@@ -22,5 +22,6 @@ end
 ice_year = groupby(df, :year)
 
 # let's plot the daily standard deviation for 2010
-plot_year_sd(ice_year[33], daily_mean, daily_std)
-savefig(joinpath(@OUTPUT, "2010_plot.svg")) # hide
+plot_year_sd(ice_year[33], daily_mean, daily_std; label = "2010")
+plot!(xlabel = "Day of year", ylabel = "Number of standard deviations")
+savefig(joinpath(@OUTPUT, "plot_2010.svg")) # hide
