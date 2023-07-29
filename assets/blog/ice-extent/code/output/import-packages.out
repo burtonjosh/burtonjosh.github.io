@@ -1,2 +1,2 @@
-ArgumentError: Package DataFrames not found in current path.
-- Run `import Pkg; Pkg.add("DataFrames")` to install the DataFrames package.
+ArgumentError: Package Colors not found in current path, maybe you meant `import/using .Colors`.
+- Otherwise, run `import Pkg; Pkg.add("Colors")` to install the Colors package.
