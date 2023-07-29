@@ -13,4 +13,5 @@ From March to May 2022 I visited [Dr. Arno Solin's](https://users.aalto.fi/~asol
 
 ## Selected posts from my blog
 
+* [Investigating 6-sigma event claims about Antarctic sea ice extent.](blog/ice-extent)
 * [Posterior predictive checking in Turing using the golf putting case study.](blog/golf-putting-in-turing)
