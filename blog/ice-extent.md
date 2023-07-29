@@ -198,6 +198,7 @@ So here's the big reveal, let's have a look.
 
 ```julia:plot-reproduced
 plot_yearly_sd(df; mean_start_year = 1991, mean_end_year = 2020)
+plot!() # hide
 savefig(joinpath(@OUTPUT, "reproduced_plot.svg")) # hide
 ```
 \fig{reproduced_plot}
@@ -229,6 +230,7 @@ super easy now to look at what happens if we include all data from 1991 upto 202
 
 ```julia:plot-2023
 plot_yearly_sd(df; mean_start_year = 1991, mean_end_year = 2023)
+plot!() # hide
 savefig(joinpath(@OUTPUT, "plot_2023.svg")) # hide
 ```
 \fig{plot_2023}
