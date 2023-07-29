@@ -36,10 +36,11 @@ c2 = colorant"#DEEEEE"
 col_range = range(c1, stop=c2, length=46)
 ```
 
-So the first thing to do is import the csv file as a `DataFrame` and have a look at the columns:
+So the first thing to do is import the csv file as a `DataFrame` and see what the columns look like. I'll just show the first 10 rows here:
 
 ```julia:load-data
 df = DataFrame(CSV.File("_assets/blog/ice-extent/code/antarctic.csv"))
+df[1:10, :]
 ```
 \show{load-data}
 
@@ -130,10 +131,11 @@ end
 ice_year = groupby(df, :year)
 
 # let's plot the daily standard deviation for 2010
-plot_year_sd(ice_year[33], daily_mean, daily_std)
-savefig(joinpath(@OUTPUT, "2010_plot.svg")) # hide
+plot_year_sd(ice_year[33], daily_mean, daily_std; label = "2010")
+plot!(xlabel = "Day of year", ylabel = "Number of standard deviations")
+savefig(joinpath(@OUTPUT, "plot_2010.svg")) # hide
 ```
-\fig{2010_plot}
+\fig{plot_2010}
 
 So in 2010, the standard deviation of antarctic ice extent (based on data from 1991 to 2020) ranges between -1 and +2. But we're interested in seeing all of the years together, in order to make a visual comparison over time.
 
@@ -194,7 +196,7 @@ end
 
 So here's the big reveal, let's have a look.
 
-```julia
+```julia:plot-reproduced
 plot_yearly_sd(df; mean_start_year = 1991, mean_end_year = 2020)
 savefig(joinpath(@OUTPUT, "reproduced_plot.svg")) # hide
 ```
@@ -227,9 +229,9 @@ super easy now to look at what happens if we include all data from 1991 upto 202
 
 ```julia:plot-2023
 plot_yearly_sd(df; mean_start_year = 1991, mean_end_year = 2023)
-savefig(joinpath(@OUTPUT, "2023_plot.svg")) # hide
+savefig(joinpath(@OUTPUT, "plot_2023.svg")) # hide
 ```
-\fig{2023_plot}
+\fig{plot_2023}
 
 Well, this is a much different story. Now of course the 2023 data is still showing that something serious is going on with the Antarctic ice extent, but when you consider all the data, it's nowhere near a 6-sigma event. In fact we can calculate it just like we did before and see that it's roughly -3.869.
 
