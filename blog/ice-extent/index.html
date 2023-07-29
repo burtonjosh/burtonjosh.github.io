@@ -1,0 +1,348 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.16.4 by Michael Rose
+  Copyright 2013-2019 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+   <link rel="stylesheet" href="/libs/katex/katex.min.css">
+     
+   <link rel="stylesheet" href="/libs/highlight/github.min.css">
+   
+  <link rel="stylesheet" href="/css/franklin.css">
+<link rel="stylesheet" href="/css/minimal-mistakes.css">
+<link rel="stylesheet" href="/css/adjust.css">
+<link rel="icon" href="/assets/temp_fav.png">
+<!--[if IE ]>
+<style>
+  /* old IE unsupported flexbox fixes */
+  .greedy-nav .site-title {
+    padding-right: 3em;
+  }
+  .greedy-nav button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+  }
+</style>
+<![endif]-->
+
+   <title>Antarctic ice extent</title>  
+  <!-- end custom head snippets -->
+  <meta name="google-site-verification" content="83wzCvn1Z2WBAj5oNN1RlvnWS5Xb5MmekUS2wgld9sg" />
+</head>
+<body class="layout--single">
+  <div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        <a class="site-title" href="/">Explorations in inference</a>
+        <ul class="visible-links">
+          <li class="masthead__menu-item"><a href="/blog/" >Blog</a></li>
+          <li class="masthead__menu-item"><a href="/work/" >Publications & Awards</a></li>
+          <li class="masthead__menu-item"><a href="/joshua_burton_cv.pdf" >CV</a></li>
+          <li class="masthead__menu-item"><a href="/hobbies/">Other Interests</a></li>
+        </ul>
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+  <div class="initial-content">
+    <div id="main" role="main">
+      <div class="sidebar sticky">
+        <div itemscope itemtype="https://schema.org/Person">
+          <div class="author__avatar">
+            <img src="/assets/portrait.jpg" alt="Me" itemprop="image">
+          </div>
+          <div class="author__content">
+            <h3 class="author__name" itemprop="name">Joshua Burton</h3>
+            <p class="author__bio" itemprop="description">PhD in Mathematical Biology, team member at PlantingSpace, 
+              software developer, general purpose AI systems and Bayesian inference researcher.</p>
+          </div>
+          <div class="author__urls-wrapper">
+            <button class="btn btn--inverse">Follow</button>
+            <ul class="author__urls social-icons">
+              <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+                <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Manchester, United Kingdom</span></li>
+              <li><a href="https://twitter.com/josh_burt0n" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i> Twitter</a></li>
+              <li><a href="https://github.com/burtonjosh" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-github" aria-hidden="true"></i> GitHub</a></li>
+              <li><a href="https://scholar.google.co.uk/citations?user=y5cJwpEAAAAJ&hl=en" rel="nofollow noopener noreferrer"><i class="fa fa-graduation-cap" aria-hidden="true"></i> Google Scholar</a></li>
+              <li><a href="mailto:josh@burton-online.me.uk" rel="nofollow noopener noreferrer"><i class="fa fa-envelope" aria-hidden="true"></i> Email</a></li>
+              <!-- <i class="fab fa-fw fa-github" aria-hidden="true"></i> GitHub</a></li> -->
+              <!-- <i class="fa-brands fa-orcid"></i> -->
+            </ul>
+          </div>
+        </div>
+      </div>
+
+
+<!-- Content appended here -->
+<div class="franklin-content"><div class="note"><div class="title">Note</div>
+<div class="content">This blog post does not seek to minimise the climate crisis. This is primarily a post about transparency and effective communication in science.</div></div>
+<h1 id="investigating_6-sigma_event_claims_about_antarctic_sea_ice_extent"><a href="#investigating_6-sigma_event_claims_about_antarctic_sea_ice_extent" class="header-anchor">Investigating 6-sigma event claims about Antarctic sea ice extent</a></h1>
+<p>I recently saw this tweet about Antarctic sea ice extent, showing that <em>something really bad</em> is happening in 2023. I tend to get bombarded with depressing content on twitter &#40;which seems to be a pretty average experience based on conversations with friends&#41; so I didn&#39;t spend too long looking at this. I agree that it looks bad, but also there&#39;s no real discussion here about <em>solutions</em>, so there&#39;s not much to gain from the post.</p>
+<center><blockquote class="twitter-tweet"><p lang="en" dir="ltr">Apologies in advance for not explaining this in any way, but here are the daily standard deviations for Antarctic sea ice extent for every day, 1989-2023, based on the 1991-2020 mean. Each blue line represents the SD&#39;s for a full year. Lighter is more recent.<br><br>2023 is in red. <a href="https://t.co/C4lLug9mlL">pic.twitter.com/C4lLug9mlL</a></p>&mdash; Prof. Eliot Jacobson (@EliotJacobson) <a href="https://twitter.com/EliotJacobson/status/1683535568268050432?ref_src=twsrc%5Etfw">July 24, 2023</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script></center>
+<p>Then a few days later I saw another alarming post telling us that this is a &quot;once-in-7.5-million-year event&quot; &#40;which is very bad&#41;, and a response questioning the methodology.</p>
+<center><blockquote class="twitter-tweet"><p lang="en" dir="ltr">stats question: is it kosher to calculate dataset X as a standard deviation of dataset Y when X is not a subset of Y? (X = 2023 data series; Y = daily mean 1991-2020). How does this graph look if recalculated on data inclusive of 2021-23 (~13% of total sample size)?</p>&mdash; Regina Rini (@rinireg) <a href="https://twitter.com/rinireg/status/1683881905140137985?ref_src=twsrc%5Etfw">July 25, 2023</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script></center>
+<p>I thought it was a pretty good question, since it wasn&#39;t immediately obvious to me why the daily mean should be calculated on a restricted data set and no explanation had been provided. So I looked at the image again and saw a link to the dataset, which I downloaded and had a look at.</p>
+<div class="franklin-toc"><ol><li><a href="#acquiring_and_visualising_the_data">Acquiring and visualising the data</a><ol><li><a href="#importing_and_cleaning">Importing and cleaning</a></li><li><a href="#leap_years">Leap years</a></li></ol></li><li><a href="#calculating_daily_means_and_standard_deviations">Calculating daily means and standard deviations</a></li><li><a href="#plotting">Plotting</a><ol><li><a href="#plotting_a_single_year">Plotting a single year</a></li><li><a href="#plotting_all_the_years">Plotting all the years</a></li></ol></li><li><a href="#reproducing_and_modifying_the_original_figure">Reproducing &#40;and modifying&#41; the original figure</a></li><li><a href="#sigma-events">Sigma-events</a></li><li><a href="#misleading_statements_create_more_questions_than_answers">Misleading statements create more questions than answers</a></li><li><a href="#glimmers_of_hope">Glimmers of hope</a></li></ol></div>
+<h2 id="acquiring_and_visualising_the_data"><a href="#acquiring_and_visualising_the_data" class="header-anchor">Acquiring and visualising the data</a></h2>
+<p>As a starting point, I just wanted to reproduce the posted figure to see if I&#39;d actually understood what was being shown. There wasn&#39;t any extra information about how the figure was made, or what the exact calculations were, but I had an idea based on the title and wanted to confirm whether or not I was right.</p>
+<p>If there&#39;s one thing I learned from my all my meetings with my PhD supervisors, it&#39;s that you can&#39;t take for granted how much explanation a plot can really need in order for it to be properly interpreted. So here I&#39;m going to do a step-by-step breakdown of how I reproduce what <em>I think</em> is being shown.</p>
+<p>First of all, the data can be found <a href="https://ads.nipr.ac.jp/vishop/#/extent" target="_blank" rel="nooopener noreferrer">here</a>. Make sure on the right hand side in the <code>REGION SELECTOR</code> box you select <code>ANTARCTIC</code>, and then scroll down to see a button that says <code>Download to sea ice extent data &#40;CSV file&#41;</code>. Pick <code>SERIES DATASET</code> as the file format and then click save, and you have your file, which I saved as <code>antarctic.csv</code>.</p>
+<h3 id="importing_and_cleaning"><a href="#importing_and_cleaning" class="header-anchor">Importing and cleaning</a></h3>
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> DataFrames, CSV, Statistics, Plots, Dates, Distributions
+
+<span class="hljs-comment"># set up some colours for plotting</span>
+<span class="hljs-keyword">using</span> Colors
+c1 = <span class="hljs-string">colorant&quot;#004488&quot;</span>
+c2 = <span class="hljs-string">colorant&quot;#DEEEEE&quot;</span>
+col_range = range(c1, stop=c2, length=<span class="hljs-number">46</span>)</code></pre>
+<p>So the first thing to do is import the csv file as a <code>DataFrame</code> and have a look at the columns:</p>
+<pre><code class="julia hljs">df = DataFrame(CSV.File(<span class="hljs-string">&quot;_assets/blog/ice-extent/code/antarctic.csv&quot;</span>))</code></pre>
+<pre><code class="plaintext hljs">UndefVarError: `CSV` not defined
+</code></pre>
+<p>Okay seems to make sense, the last column is what we&#39;re really interested in looking at, and we can use the date information from the other columns to help us with plotting. The name of the last column is a bit ugly so we can just rename it to <code>&quot;ice&quot;</code>, which is a bit easier to type.</p>
+<pre><code class="julia hljs">new_names = [<span class="hljs-string">&quot;#num&quot;</span>, <span class="hljs-string">&quot;year&quot;</span>, <span class="hljs-string">&quot;month&quot;</span>, <span class="hljs-string">&quot;day&quot;</span>, <span class="hljs-string">&quot;time&quot;</span>, <span class="hljs-string">&quot;ice&quot;</span>]
+rename!(df, new_names)</code></pre>
+<h3 id="leap_years"><a href="#leap_years" class="header-anchor">Leap years</a></h3>
+<p>So far so good. Now I&#39;m going to introduce a little trick to deal with the issue of leap years. Maybe there is a better in-built solution that someone has already implemented, but this seems to work ok. For plotting and calculation purposes it&#39;s good to make sure every day of the year has a unique value, e.g. January 1st &#61; 1, January 2nd &#61; 2. So what&#39;s the value for December 31st? In 2007 it&#39;s 365, but in 2008 it&#39;s 366. This is pretty annoying when it comes to indexing, so I&#39;ve made a little modification to the <code>Dates.jl</code> function <code>dayofyear</code>, so that we kind of &quot;assume&quot; every year has a leap year, and for years that don&#39;t we just don&#39;t have any data that maps to the 60th day of the year &#40;February 29th&#41;. </p>
+<pre><code class="julia hljs"><span class="hljs-keyword">function</span> dayofyear_noleap(year, month, day)
+  num = dayofyear(DateTime(year, month, day))
+  <span class="hljs-keyword">if</span> year % <span class="hljs-number">4</span> != <span class="hljs-number">0</span> &amp;&amp; month &gt;= <span class="hljs-number">3</span>
+      num += <span class="hljs-number">1</span>
+  <span class="hljs-keyword">end</span>
+  num
+<span class="hljs-keyword">end</span></code></pre>
+<p>Now we have this function, we can add an extra column to our <code>DataFrame</code> that corresponds to the day of the year, and get rid of the remaining columns that we won&#39;t use in plotting.</p>
+<pre><code class="julia hljs"><span class="hljs-comment"># add in dayofyear for indexing purposes</span>
+dates = df[!,[:year, :month, :day]]
+day_of_year = [dayofyear_noleap(dates[i,:]...) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:first(size(df))]
+df[!,:dayofyear] = day_of_year
+df = df[!, [:ice, :dayofyear, :year]]</code></pre>
+<h2 id="calculating_daily_means_and_standard_deviations"><a href="#calculating_daily_means_and_standard_deviations" class="header-anchor">Calculating daily means and standard deviations</a></h2>
+<p>So now we have a nicely set up <code>DataFrame</code> and we can start doing some mean and standard deviation calculations. We want the mean and standard deviation of ice extent for each day of the year, from 1 to 366. <code>DataFrames.jl</code> has a nice function <code>groupby</code> which let&#39;s us make <code>GroupedDataFrame</code>s from grouped columns, so we can just group all of the data by day of the year:</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">function</span> daily_mean_and_sd(df::GroupedDataFrame)
+  n = length(df)
+  daily_mean = [mean(df[i][!, :ice]) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:n]
+  daily_std = [std(df[i][!, :ice]) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:n]
+  
+  daily_mean, daily_std
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-comment"># find start and end indexes in the DataFrame</span>
+mean_start = findfirst(df[!,:year] .== <span class="hljs-number">1991</span>)
+mean_end = findlast(df[!,:year] .== <span class="hljs-number">2020</span>)
+
+<span class="hljs-comment"># groupby `dayofyear` for the data restricted to the start and end indices</span>
+day_df = groupby(df[mean_start:mean_end, :], :dayofyear)
+daily_mean, daily_std = daily_mean_and_sd(day_df)</code></pre>
+<p>Now that we have daily means, <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>x</mi><mo>ˉ</mo></mover></mrow><annotation encoding="application/x-tex">\bar{x}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5678em;"></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.5678em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">x</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.2222em;"><span class="mord">ˉ</span></span></span></span></span></span></span></span></span></span>, and standard deviations, <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>σ</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">\hat{\sigma}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">σ</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span></span></span></span>, we can just compare these to the data from each year and calculate the standard deviation for a data point <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span> from day <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span></span></span></span> as</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>σ</mi><mo>=</mo><mo stretchy="false">(</mo><mi>x</mi><mo>−</mo><msub><mover accent="true"><mi>x</mi><mo>ˉ</mo></mover><mi>d</mi></msub><mo stretchy="false">)</mo><mi mathvariant="normal">/</mi><msub><mover accent="true"><mi>σ</mi><mo>^</mo></mover><mi>d</mi></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex"> \sigma = (x - \bar{x}_d) / \hat{\sigma}_d. </annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">σ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.5678em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">x</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.2222em;"><span class="mord">ˉ</span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mord">/</span><span class="mord"><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6944em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">σ</span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span></span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
+<h2 id="plotting"><a href="#plotting" class="header-anchor">Plotting</a></h2>
+<h3 id="plotting_a_single_year"><a href="#plotting_a_single_year" class="header-anchor">Plotting a single year</a></h3>
+<p>We can plot a whole year pretty nicely with a little helper function</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">function</span> plot_year_sd(
+  year,
+  daily_mean,
+  daily_std;
+  color = :black,
+  label = <span class="hljs-literal">false</span>,
+  alpha = <span class="hljs-number">1.0</span>
+)
+  idx = year[!, :dayofyear]
+  plot(
+    idx,
+    (year[!, :ice] .- daily_mean[idx]) ./ daily_std[idx];
+    color,
+    label,
+    alpha=alpha,
+    lw=<span class="hljs-number">2</span>
+  )
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-comment"># groupby `year` to easily plot each year</span>
+ice_year = groupby(df, :year)
+
+<span class="hljs-comment"># let&#x27;s plot the daily standard deviation for 2010</span>
+plot_year_sd(ice_year[<span class="hljs-number">33</span>], daily_mean, daily_std)</code></pre>
+<p><span style="color:red;">// Image matching '/assets/blog/ice-extent/code/2010_plot' not found. //</span></p>
+<p>So in 2010, the standard deviation of antarctic ice extent &#40;based on data from 1991 to 2020&#41; ranges between -1 and &#43;2. But we&#39;re interested in seeing all of the years together, in order to make a visual comparison over time.</p>
+<h3 id="plotting_all_the_years"><a href="#plotting_all_the_years" class="header-anchor">Plotting all the years</a></h3>
+<p>Plotting all the years at once is more of the same thing and doesn&#39;t make for a very interesting discussion, so I&#39;ll just wrap it all up in a big function that takes the <code>DataFrame</code>, as well as the start and end years from which we want to calculate the daily means and standard deviations. I&#39;ve also plotted 2016 in green and 2023 in red, to highlight the interesting behaviour that can be seen.</p>
+<pre><code class="julia hljs"><span class="hljs-comment"># this is the same as the previous function but adds to a plot with `plot!`, rather than creating a new one</span>
+<span class="hljs-keyword">function</span> plot_year_sd!(
+  year,
+  daily_mean,
+  daily_std;
+  color = :black,
+  label,
+  alpha = <span class="hljs-number">1.0</span>
+)
+  idx = year[!, :dayofyear]
+  plot!(
+    idx,
+    (year[!, :ice] .- daily_mean[idx]) ./ daily_std[idx];
+    color,
+    label,
+    alpha=alpha,
+    lw=<span class="hljs-number">2</span>
+  )
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">function</span> plot_yearly_sd(df; mean_start_year = <span class="hljs-number">1991</span>, mean_end_year = <span class="hljs-number">2020</span>)
+  mean_start = findfirst(df[!,:year] .== mean_start_year)
+  mean_end = findlast(df[!,:year] .== mean_end_year)
+  
+  <span class="hljs-comment"># group by :dayofyear to calculate daily mean and sd</span>
+  day_df = groupby(df[mean_start:mean_end, :], :dayofyear)
+  daily_mean, daily_std = daily_mean_and_sd(day_df)
+  
+  <span class="hljs-comment"># group by :year to plot each year    </span>
+  ice_year = groupby(df, :year)
+          
+  plot_year_sd(ice_year[<span class="hljs-number">1</span>], daily_mean, daily_std; color=col_range[<span class="hljs-number">1</span>], label=<span class="hljs-literal">false</span>, alpha=<span class="hljs-number">0.75</span>)
+  <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">2</span>:length(ice_year)-<span class="hljs-number">1</span>
+    plot_year_sd!(ice_year[i], daily_mean, daily_std; color = col_range[i], label=<span class="hljs-literal">false</span>, alpha=<span class="hljs-number">0.75</span>)
+  <span class="hljs-keyword">end</span>
+  plot_year_sd!(ice_year[<span class="hljs-number">39</span>], daily_mean, daily_std; color=:green, label=<span class="hljs-number">2016</span>)
+  plot_year_sd!(ice_year[<span class="hljs-keyword">end</span>], daily_mean, daily_std; color=:red, label=<span class="hljs-number">2023</span>)
+  plot!(
+    title = <span class="hljs-string">&quot;Daily standard deviation for Antarctic sea ice extent: 1978-2023 \n Based on <span class="hljs-variable">$mean_start_year</span> - <span class="hljs-variable">$mean_end_year</span> daily mean&quot;</span>,
+    ylabel = <span class="hljs-string">&quot;Number of standard deviations&quot;</span>,
+    xlabel = <span class="hljs-string">&quot;Day of year&quot;</span>,
+    ylim = (-<span class="hljs-number">6.75</span>, <span class="hljs-number">3.5</span>),
+    titlefont = font(<span class="hljs-number">11</span>)
+  )
+  hline!([<span class="hljs-number">0</span>, <span class="hljs-number">366</span>], color=:black, label=<span class="hljs-literal">false</span>)
+<span class="hljs-keyword">end</span></code></pre>
+<h2 id="reproducing_and_modifying_the_original_figure"><a href="#reproducing_and_modifying_the_original_figure" class="header-anchor">Reproducing &#40;and modifying&#41; the original figure</a></h2>
+<p>So here&#39;s the big reveal, let&#39;s have a look.</p>
+<pre><code class="julia hljs">plot_yearly_sd(df; mean_start_year = <span class="hljs-number">1991</span>, mean_end_year = <span class="hljs-number">2020</span>)</code></pre>
+<p><span style="color:red;">// Image matching '/assets/blog/ice-extent/code/reproduced_plot' not found. //</span></p>
+<p>So we managed to reproduce the plot, which means my assumptions about how it was made were correct.</p>
+<p>We can also confirm, as claimed, the 6-sigma event, which is actually more like -6.325.</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">function</span> minimum_sd(year, daily_mean, daily_std)
+  idx = year[!, :dayofyear]
+  round(minimum((year[!, :ice] .- daily_mean[idx]) ./ daily_std[idx]), digits = <span class="hljs-number">3</span>)
+<span class="hljs-keyword">end</span>
+
+ice_year = groupby(df, :year)
+        
+mean_start = findfirst(df[!,:year] .== <span class="hljs-number">1991</span>)
+mean_end = findlast(df[!,:year] .== <span class="hljs-number">2020</span>)
+
+day_df = groupby(df[mean_start:mean_end, :], :dayofyear)
+daily_mean, daily_std = daily_mean_and_sd(day_df)
+minimum_sd(ice_year[<span class="hljs-keyword">end</span>], daily_mean, daily_std)</code></pre>
+<pre><code class="plaintext hljs">UndefVarError: `groupby` not defined
+</code></pre>
+<p>This might seem like a bit of a long-winded route just to reproduce the data, but now we have a plotting function that can show us what this looks like when we consider any subset &#40;or indeed all&#41; of the data&#33; For example, it&#39;s  super easy now to look at what happens if we include all data from 1991 upto 2023.</p>
+<pre><code class="julia hljs">plot_yearly_sd(df; mean_start_year = <span class="hljs-number">1991</span>, mean_end_year = <span class="hljs-number">2023</span>)</code></pre>
+<p><span style="color:red;">// Image matching '/assets/blog/ice-extent/code/2023_plot' not found. //</span></p>
+<p>Well, this is a much different story. Now of course the 2023 data is still showing that something serious is going on with the Antarctic ice extent, but when you consider all the data, it&#39;s nowhere near a 6-sigma event. In fact we can calculate it just like we did before and see that it&#39;s roughly -3.869.</p>
+<pre><code class="julia hljs">mean_start = findfirst(df[!,:year] .== <span class="hljs-number">1991</span>)
+mean_end = findlast(df[!,:year] .== <span class="hljs-number">2023</span>)
+
+day_df = groupby(df[mean_start:mean_end, :], :dayofyear)
+daily_mean, daily_std = daily_mean_and_sd(day_df)
+minimum_sd(ice_year[<span class="hljs-keyword">end</span>], daily_mean, daily_std)</code></pre>
+<pre><code class="plaintext hljs">UndefVarError: `df` not defined
+</code></pre>
+<h2 id="sigma-events"><a href="#sigma-events" class="header-anchor">Sigma-events</a></h2>
+<p>This brings us on to the &quot;once-in-7.5-million-year event&quot; claim. First of all this isn&#39;t strictly true anyway, so  I&#39;ll talk about where this comes from and then we can calculate it for each of the sigma values we&#39;ve seen. <a href="https://en.wikipedia.org/wiki/68&#37;E2&#37;80&#37;9395&#37;E2&#37;80&#37;9399.7_rule#Table_of_numerical_values">This table</a> gives the approximate frequency for a daily event with a given standard deviation value. In other words, how often we would  expect an <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span>-sigma event to occur. The probability of an <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span>-sigma is given by</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn><mo>−</mo><mtext>Pr</mtext><mo stretchy="false">(</mo><mi>μ</mi><mo>−</mo><mi>n</mi><mi>σ</mi><mo>≤</mo><mi>X</mi><mo>≤</mo><mi>μ</mi><mo>+</mo><mi>n</mi><mi>σ</mi><mo stretchy="false">)</mo><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex"> 1 - \text{Pr} (\mu - n\sigma \leq X \leq \mu + n\sigma).</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">Pr</span></span><span class="mopen">(</span><span class="mord mathnormal">μ</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">nσ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8193em;vertical-align:-0.136em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">μ</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">nσ</span><span class="mclose">)</span><span class="mord">.</span></span></span></span></span>
+<p>For 3-sigma, this is approximately equal to 0.00270, or roughly 1 in 370. So a 3-sigma event should happen, on average, once a year.</p>
+<p>Now this function is <em>highly</em> non-linear, so a 4-sigma event should happen on average every 43 years, and a 5-sigma event should happen every 4776 years. This is getting worringly rare. Anyway, the code below calculates the likelihood of the ice extent decrease that we&#39;ve seen, first only considering the data from 1991 to 2020.</p>
+<pre><code class="julia hljs">sigma_event(n) = <span class="hljs-number">1</span> / (<span class="hljs-number">2</span> * cdf(Normal(), -abs(n)))
+
+mean_start = findfirst(df[!,:year] .== <span class="hljs-number">1991</span>)
+mean_end = findlast(df[!,:year] .== <span class="hljs-number">2020</span>)
+
+day_df = groupby(df[mean_start:mean_end, :], :dayofyear)
+daily_mean, daily_std = daily_mean_and_sd(day_df)
+min_sd = minimum_sd(ice_year[<span class="hljs-keyword">end</span>], daily_mean, daily_std)
+
+sigma_event(min_sd) / <span class="hljs-number">365</span></code></pre>
+<pre><code class="plaintext hljs">UndefVarError: `df` not defined
+</code></pre>
+<p>Essentially, once every 10 million years. And including the data upto 2023? We see the expected frequency is actually once every 25 years. Still bad, but the statement isn&#39;t exactly.....<em>impactful</em>.</p>
+<pre><code class="julia hljs">mean_start = findfirst(df[!,:year] .== <span class="hljs-number">1991</span>)
+mean_end = findlast(df[!,:year] .== <span class="hljs-number">2023</span>)
+
+day_df = groupby(df[mean_start:mean_end, :], :dayofyear)
+daily_mean, daily_std = daily_mean_and_sd(day_df)
+min_sd = minimum_sd(ice_year[<span class="hljs-keyword">end</span>], daily_mean, daily_std)
+
+sigma_event(min_sd) / <span class="hljs-number">365</span></code></pre>
+<pre><code class="plaintext hljs">UndefVarError: `df` not defined
+</code></pre>
+<h2 id="misleading_statements_create_more_questions_than_answers"><a href="#misleading_statements_create_more_questions_than_answers" class="header-anchor">Misleading statements create more questions than answers</a></h2>
+<p>So to summarise, I think really there are two key questions that need to be answered here. The first and most obvious one,</p>
+<ul>
+<li><p>Why were the daily means only calculated using data upto 2020?</p>
+</li>
+</ul>
+<p>If there&#39;s a real reason, why hasn&#39;t that been communicated? Has a specific event happened that justifies partitioning the data set at 2020?</p>
+<p>On the website of the original poster, there actually <a href="https://climatecasino.net/2023/06/wtf-is-happening-an-overview/">is a plot</a> that uses all data up to 2023. This plot shows the difference from the mean in real values, not in standard deviations. I think this is, at the very least, confusing. Why change the data range in the more recent post, and not say anything? Would the graph have gotten as much attention if the headline was &quot;once-in-25-year&quot; event?</p>
+<p>And the second question,</p>
+<ul>
+<li><p>Is it helpful to post these graphs?</p>
+</li>
+</ul>
+<p>Maybe. At least, when done properly, with enough transparency about methods, I think it&#39;s necessary to communicate  extremely pressing climate issues. It&#39;s quite clear from the data that the Antarctic ice extent is smaller than it should be at this time of year. But I also don&#39;t think these kinds of posts are useful when no clear advice or hope is given to people.</p>
+<h2 id="glimmers_of_hope"><a href="#glimmers_of_hope" class="header-anchor">Glimmers of hope</a></h2>
+<p>So on that note, I found a <a href="https://twitter.com/JarnoVanhatalo/status/1684120472685023232">job advertisement</a> &#40;also on twitter&#33;&#41; for a Postdoctoral researcher, focussing on modeling Antarctica&#39;s ice cover and water level. I encourage you to share this job posting, or others like it that focus on understanding complex climate problems &#40;and hopefully communicating them effectively&#41;. The more people we have working in this area, and climate science in general, the more chance we have of continuing to survive on this planet.</p>
+<center><blockquote class="twitter-tweet"><p lang="en" dir="ltr">We have a very interesting postdoc position in ocean modelling and emulation at the Faculty of Science. We look for applicants with physics, statistics and ML background 👇 (1/2)<a href="https://t.co/eSRohHXJp2">https://t.co/eSRohHXJp2</a></p>&mdash; Jarno Vanhatalo (@JarnoVanhatalo) <a href="https://twitter.com/JarnoVanhatalo/status/1684120472685023232?ref_src=twsrc%5Etfw">July 26, 2023</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script></center>
+<!-- <div class="page-foot">
+    <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> {{ fill author }}. {{isnotpage /tag/*}}Last modified: {{ fill fd_mtime }}.{{end}}
+    Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+</div> -->
+</div><!-- CONTENT ENDS HERE -->
+
+      </div> <!-- closure of main -->
+    </div>   <!-- closure of class initial--content -->
+
+    <div class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+        <!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+          <ul class="social-icons">
+            <li><strong>Follow:</strong></li>
+            <li><a href="https://twitter.com/josh_burt0n" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i> Twitter</a></li>
+            <li><a href="https://github.com/burtonjosh" rel="nofollow noopener noreferrer"><i class="fab fa-fw fa-github" aria-hidden="true"></i> GitHub</a></li>
+          </ul>
+        </div>
+        <div class="page__footer-copyright">&copy; Joshua Burton. Powered by <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a>,  <a href="https://mademistakes.com/work/minimal-mistakes-jekyll-theme/" rel="nofollow">Minimal Mistakes</a>
+          and the <a href="https://julialang.org">Julia programming language</a>.</div>
+      </footer>
+    </div>
+
+    <script src="/libs/minimal-mistakes/main.min.js"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.8.2/js/all.js" integrity="sha384-DJ25uNYET2XCl5ZF++U8eNxPWqcKohUUBUpKGlNLMchM7q4Wjg2CUpjHLaL8yYPH" crossorigin="anonymous"></script>
+
+    
+        
+
+
+
+    
+    
+        
+
+
+    
+  </body>
+</html>
