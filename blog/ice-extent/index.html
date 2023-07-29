@@ -244,7 +244,7 @@ plot!(xlabel = <span class="hljs-string">&quot;Day of year&quot;</span>, ylabel 
 <h2 id="reproducing_and_modifying_the_original_figure"><a href="#reproducing_and_modifying_the_original_figure" class="header-anchor">Reproducing &#40;and modifying&#41; the original figure</a></h2>
 <p>So here&#39;s the big reveal, let&#39;s have a look.</p>
 <pre><code class="julia hljs">plot_yearly_sd(df; mean_start_year = <span class="hljs-number">1991</span>, mean_end_year = <span class="hljs-number">2020</span>)</code></pre>
-<p><span style="color:red;">// Image matching '/assets/blog/ice-extent/code/reproduced_plot' not found. //</span></p>
+<img src="/assets/blog/ice-extent/code/output/reproduced_plot.svg" alt="">
 <p>So we managed to reproduce the plot, which means my assumptions about how it was made were correct.</p>
 <p>We can also confirm, as claimed, the 6-sigma event, which is actually more like -6.325.</p>
 <pre><code class="julia hljs"><span class="hljs-keyword">function</span> minimum_sd(year, daily_mean, daily_std)
@@ -263,7 +263,7 @@ minimum_sd(ice_year[<span class="hljs-keyword">end</span>], daily_mean, daily_st
 <pre><code class="plaintext hljs">-6.325</code></pre>
 <p>This might seem like a bit of a long-winded route just to reproduce the data, but now we have a plotting function that can show us what this looks like when we consider any subset &#40;or indeed all&#41; of the data&#33; For example, it&#39;s  super easy now to look at what happens if we include all data from 1991 upto 2023.</p>
 <pre><code class="julia hljs">plot_yearly_sd(df; mean_start_year = <span class="hljs-number">1991</span>, mean_end_year = <span class="hljs-number">2023</span>)</code></pre>
-<p><span style="color:red;">// Image matching '/assets/blog/ice-extent/code/plot_2023' not found. //</span></p>
+<img src="/assets/blog/ice-extent/code/output/plot_2023.svg" alt="">
 <p>Well, this is a much different story. Now of course the 2023 data is still showing that something serious is going on with the Antarctic ice extent, but when you consider all the data, it&#39;s nowhere near a 6-sigma event. In fact we can calculate it just like we did before and see that it&#39;s roughly -3.869.</p>
 <pre><code class="julia hljs">mean_start = findfirst(df[!,:year] .== <span class="hljs-number">1991</span>)
 mean_end = findlast(df[!,:year] .== <span class="hljs-number">2023</span>)
