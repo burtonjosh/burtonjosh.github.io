@@ -80,6 +80,8 @@ df = df[!, [:ice, :dayofyear, :year]]
 ```julia:quick-plot
 kwargs = (color = :black, alpha = 0.2, label = false, lw = 2)
 
+ice_year = groupby(df, :year)
+
 plot(ice_year[1][!, :dayofyear], ice_year[1][!, :ice]; kwargs...)
 for i in 2:length(ice_year)-1
     plot!(ice_year[i][!, :dayofyear], ice_year[i][!, :ice]; kwargs...)
