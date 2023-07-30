@@ -147,6 +147,8 @@ df = df[!, [:ice, :dayofyear, :year]]</code></pre>
 <h3 id="quick_plot_to_investigate_the_data"><a href="#quick_plot_to_investigate_the_data" class="header-anchor">Quick plot to investigate the data</a></h3>
 <pre><code class="julia hljs">kwargs = (color = :black, alpha = <span class="hljs-number">0.2</span>, label = <span class="hljs-literal">false</span>, lw = <span class="hljs-number">2</span>)
 
+ice_year = groupby(df, :year)
+
 plot(ice_year[<span class="hljs-number">1</span>][!, :dayofyear], ice_year[<span class="hljs-number">1</span>][!, :ice]; kwargs...)
 <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">2</span>:length(ice_year)-<span class="hljs-number">1</span>
     plot!(ice_year[i][!, :dayofyear], ice_year[i][!, :ice]; kwargs...)
@@ -155,7 +157,7 @@ plot!(ice_year[<span class="hljs-keyword">end</span>][!, :dayofyear], ice_year[<
 plot!(ice_year[<span class="hljs-number">39</span>][!, :dayofyear], ice_year[<span class="hljs-number">39</span>][!, :ice], color = :green, label = <span class="hljs-string">&quot;2016&quot;</span>, lw = <span class="hljs-number">2</span>)
 
 plot!(xlabel = <span class="hljs-string">&quot;Day of year&quot;</span>, ylabel = <span class="hljs-string">&quot;Antarctic ice extent (km²)&quot;</span>)</code></pre>
-<p><span style="color:red;">// Image matching '/assets/blog/ice-extent/code/quick_plot' not found. //</span></p>
+<img src="/assets/blog/ice-extent/code/output/quick_plot.svg" alt="">
 <p>As we can see, there is definitely a reduction in the ice extent in 2023, compared to all the other years. I&#39;ve also plotted 2016 in green, which we can see had lower ice extent than average in the latter half of the year. So this  definitely warrants some further investigation. I won&#39;t go into other methods for analysing the data in this blog post, but rather focus on the original approach and it&#39;s claims.</p>
 <h2 id="calculating_daily_means_and_standard_deviations"><a href="#calculating_daily_means_and_standard_deviations" class="header-anchor">Calculating daily means and standard deviations</a></h2>
 <p>So now we have a nicely set up <code>DataFrame</code> and we can start doing some mean and standard deviation calculations. We want the mean and standard deviation of ice extent for each day of the year, from 1 to 366. <code>DataFrames.jl</code> has a nice function <code>groupby</code> which let&#39;s us make <code>GroupedDataFrame</code>s from grouped columns, so we can just group all of the data by day of the year:</p>
