@@ -1,6 +1,6 @@
 @def title = "Antarctic ice extent"
 
-\note{This blog post does not seek to minimise the climate crisis. This is primarily a post about transparency and effective communication in science.}
+\note{This blog post does not seek to minimise the climate crisis. This is primarily a post about transparency and effective communication in science. Whilst making this post someone posted an [online dashboard](https://climate-dashboard.streamlit.app/)[^maciej] where you can plot the sea ice extent interactively, whilst changing the baseline data range.}
 
 # Investigating 6-sigma event claims about Antarctic sea ice extent
 
@@ -74,6 +74,26 @@ day_of_year = [dayofyear_noleap(dates[i,:]...) for i in 1:first(size(df))]
 df[!,:dayofyear] = day_of_year
 df = df[!, [:ice, :dayofyear, :year]]
 ```
+
+### Quick plot to investigate the data
+
+```julia:quick-plot
+kwargs = (color = :black, alpha = 0.2, label = false, lw = 2)
+
+plot(ice_year[1][!, :dayofyear], ice_year[1][!, :ice]; kwargs...)
+for i in 2:length(ice_year)-1
+    plot!(ice_year[i][!, :dayofyear], ice_year[i][!, :ice]; kwargs...)
+end
+plot!(ice_year[end][!, :dayofyear], ice_year[end][!, :ice], color = :red, label = "2023", lw = 2)
+plot!(ice_year[39][!, :dayofyear], ice_year[39][!, :ice], color = :green, label = "2016", lw = 2)
+
+plot!(xlabel = "Day of year", ylabel = "Antarctic ice extent (km²)")
+savefig(joinpath(@OUTPUT, "quick_plot.svg")) # hide
+```
+\fig{quick_plot}
+
+As we can see, there is definitely a reduction in the ice extent in 2023, compared to all the other years. I've also plotted 2016 in green, which we can see had lower ice extent than average in the latter half of the year. So this 
+definitely warrants some further investigation. I won't go into other methods for analysing the data in this blog post, but rather focus on the original approach and it's claims.
 
 ## Calculating daily means and standard deviations
 
@@ -249,8 +269,15 @@ minimum_sd(ice_year[end], daily_mean, daily_std)
 
 ## Sigma-events
 
-This brings us on to the "once-in-7.5-million-year event" claim. First of all this isn't strictly true anyway, so 
-I'll talk about where this comes from and then we can calculate it for each of the sigma values we've seen. [This table](https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule#Table_of_numerical_values) gives the approximate frequency for a daily event with a given standard deviation value. In other words, how often we would 
+This brings us on to the "once-in-7.5-million-year event" claim (and later a ["one in 70 billion claim"](https://twitter.com/EliotJacobson/status/1685247268377804800)!!!). First of all this isn't strictly true anyway, so 
+I'll talk about where this comes from and then we can calculate it for each of the sigma values we've seen.
+
+There are two main assumptions being made here that I think make this claim misleading. The first assumption is that 
+the (daily) data are Normally distributed. Well if the claim is that things are changing over time (i.e. ice extent is decreasing), this is almost certainly an unrealistic assumption. The other is that data points are independent and identically distributed, which is untrue for the same reasons.
+
+\note{To his credit, the original poster has been met with some backlash about using this statistic, and has stated he won't continue to use it.}
+
+[This table](https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule#Table_of_numerical_values) gives the approximate frequency for a daily event with a given standard deviation value. In other words, how often we would 
 expect an $n$-sigma event to occur. The probability of an $n$-sigma is given by
 
 $$ 1 - \text{Pr} (\mu - n\sigma \leq X \leq \mu + n\sigma).$$
@@ -309,3 +336,6 @@ extremely pressing climate issues. It's quite clear from the data that the Antar
 So on that note, I found a [job advertisement](https://twitter.com/JarnoVanhatalo/status/1684120472685023232) (also on twitter!) for a Postdoctoral researcher, focussing on modeling Antarctica's ice cover and water level. I encourage you to share this job posting, or others like it that focus on understanding complex climate problems (and hopefully communicating them effectively). The more people we have working in this area, and climate science in general, the more chance we have of continuing to survive on this planet.
 
 ~~~<center><blockquote class="twitter-tweet"><p lang="en" dir="ltr">We have a very interesting postdoc position in ocean modelling and emulation at the Faculty of Science. We look for applicants with physics, statistics and ML background 👇 (1/2)<a href="https://t.co/eSRohHXJp2">https://t.co/eSRohHXJp2</a></p>&mdash; Jarno Vanhatalo (@JarnoVanhatalo) <a href="https://twitter.com/JarnoVanhatalo/status/1684120472685023232?ref_src=twsrc%5Etfw">July 26, 2023</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script></center>~~~
+
+## References
+[^maciej]: [https://climate-dashboard.streamlit.app/](https://climate-dashboard.streamlit.app/)
